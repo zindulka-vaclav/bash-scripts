@@ -1,13 +1,14 @@
 #!/bin/bash
 #zabbix-backup
-#provadi mysql dupmove zalohy pro zvolenou sluzbu a zastavuje service - nelze pouzit pro postgresql databazi
+# provadi postgresql dupmove zalohy zabbixu - mozna nebude od veci zastavovat sluzbu
+# zaloha se provadi pomoci pg_dump ve formatu slozky - komprese ve vychozim stavu je vyssi, nez pg_dump | gzip
 
 
 #LIST _PROMENNE _EXITY _LOGOVANI _PODMINKY _KONFIGURACE _ZALOHA
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=0
+VERSION_PATCH=1
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # pri predani parametru -x provede zapnuti debug logu
@@ -25,10 +26,9 @@ fi
 
 #_PROMENNE
 scriptName="zabbix-backup"
-backupDir="/var/backup/zabbix"
-todayDate="$(date +%F)"
-#konfigurace pro soubor s heslem
-mysqlPassword="EMPTY"
+backupDate="$(date +%F)"
+backupTime="$(date +%H-%M)"
+backupDir="/var/backup/zabbix/$backupDate/"
 
 #cesta ke scriptu
 scriptDir="/usr/local/bash-scripts"
@@ -54,26 +54,13 @@ Log "($startFile) set to ($$)"
 
 
 #funkce pro zapis souboru pro mysqldump
-write_mysqlDefaultsFile()
+write_pgpassFile()
 {
 	{
-	echo "[mysql]"
-	echo "user=zabbix"
-	echo "password='$mysqlPassword'"
-	echo ""
-	echo "[mysqldump]"
-	echo "user=zabbix"
-	echo "password='$mysqlPassword'"
-	} > "$mysqlDefaultsFile"
-	chmod 600 "$mysqlDefaultsFile"
-
-	if [ -f "$configFile" ]
-	then
-	#odstranit radky z configFile
-	sed -i -e 's/mysqlUser.*//g' "$configFile"
-	sed -i -e 's/mysqlPassword.*//g' "$configFile"
-	sed -i -e 's/backupItems.*//g' "$configFile"
-	fi
+	echo "# hostname:port:database:username:password"
+	echo "localhost:5432:zabbix:zabbix:ZABBIX_PASSWORD"
+	} > "$pgpassFile"
+	chmod 600 "$pgpassFile"
 }
 
 
@@ -85,30 +72,30 @@ write(){
 	RvLog "provedena zaloha konfigurace do (${configFile}.back)"
 	fi	
 	{
-	echo "disabled=1	#vypne/zapne (1/0) provadeni scriptu"
-	echo "backupLimit=7	#nastavuje, kolik zaloh zpetne se bude drzet"
-	echo "backupItem=\"zabbix\"	#seznam databazi oddeleny mezerou"
-	echo "serviceArray=( zabbix-server httpd )	#seznam sluzeb, ktere se budou zastavovat oddeleny mezerou"
+	echo "#vypne/zapne (1/0) provadeni scriptu"
+	echo "disabled=1"
+	echo ""
+	echo "#nastavuje, kolik zaloh zpetne se bude drzet"
+	echo "backupLimit=14"
+	echo ""
+	echo "#seznam sluzeb, ktere se budou zastavovat oddeleny mezerou - musi byt v zavorkach"
+	echo "#serviceArray=( zabbix-server apache2 )"
+	echo "serviceArray=( zabbix-server )"
 	} > "$configFile"
 	LogError "zapsan konfiguracni soubor pro server ($HOSTNAME)"
-	write_mysqlDefaultsFile
+	write_pgpassFile
 }
 
 
-mysqlDefaultsFile="$configDir/.my-zabbix.cnf"
-#kontrola existence mysqlDefaultsFile, pripadne vytvoreni z existujiciho configu
+# soubor s heslem k postgresql databazi zabbixu
+pgpassFile="$HOME/.pgpass"
+
+#kontrola existence pgpassFile, pripadne vytvoreni z existujiciho configu
 #v pripade prazdneho hesla zaloguje error
-if [ ! -f "$mysqlDefaultsFile" ]
+if [ ! -f "$pgpassFile" ]
 then
-	write_mysqlDefaultsFile
-else
-	if [ -z "$mysqlPassword" ]
-	then
-		LogError "Promenna mysqlPassword je prazdna, je nutne nastavit heslo do mysql databaze v [$mysqlDefaultsFile]"
-		write_mysqlDefaultsFile
-		MailSend
-		exit 12
-	fi
+	write_pgpassFile
+	LogError "Zapsan novy soubor [$pgpassFile] nutno doplnit heslo pro uzivatele zabbix"
 fi
 
 
@@ -132,17 +119,17 @@ fi
 
 
 #kontrola nastaveni promennych z configu
-if [ -z "$backupItem" ] || [ -z "$serviceArray" ]
+if [ -z "$serviceArray" ]
 then
-	LogError "nebyla nastavena nektera z promennych backupItem=($backupItem), serviceArray=($serviceArray)"
+	LogError "nebyla nastavena promenna serviceArray=($serviceArray)"
 	exit 2
 fi
 
 
 #kontrola, zda mysqlPassword neobsahuje EMPTY
-if [ $(grep -c "EMPTY" "$mysqlDefaultsFile") -ne 0 ]
+if [ $(grep -c "ZABBIX_PASSWORD" "$pgpassFile") -ne 0 ]
 then
-	LogError "POZOR, neni nastaveno heslo pro mysql-backup v [$mysqlDefaultsFile]"
+	LogError "POZOR, neni nastaveno heslo pro zabbix-backup v [$pgpassFile]"
 	MailSend
 	exit 13
 fi
@@ -161,71 +148,52 @@ done
 
 
 #_ZALOHA
-backupName="$backupItem-${todayDate}.sql"
-RvLog "nastaven promenna backupName=($backupName)"
 CheckDir "$backupDir"
+backupName="$backupDir/$backupTime"
 
+#vytvoreni zalohy
+pg_dump -Uzabbix -w --dbname=zabbix --create --clean --format=directory --file="$backupName" --jobs=8
+RvLog "Vytvoren pg_dump databaze s nazvem ($backupDir/$backupTime)"
 
-#vytvoreni mysqldumpu
-mysqldump --defaults-extra-file="$mysqlDefaultsFile" -e -F --routines "$backupItem" -r "$backupDir/$backupName"
-RvLog "Vytvoren mysqldump databaze s nazvem ($backupDir/$backupName)"
-
-#kontrola navratove hodnoty mysqldumpu
-if [ "$?" -eq 0 ]
+#kontrola navratove hodnoty cd
+if [ "$?" -eq 0 -a -d "$backupName" ]
 then
-	#zabaleni celeho adresare /var/lib/mysql
-	sleep 1
-	/bin/systemctl stop mariadb.service
-	RvLog "zastaveni mariadb"
-	sleep 1
-	tar czpf "$backupDir/mysql-${todayDate}.tgz" -C /var/lib/ mysql
-	RvLog "tar /var/lib/mysql"
-	sleep 1
-	/bin/systemctl start mariadb.service
-	RvLog "spusteni mariadb"
-	cd "$backupDir"
-	RvLog "cd ($backupDir)"
-
-	#kontrola navratove hodnoty cd
-	if [ "$?" -eq 0 -a -f "$backupName" ]
-	then
-
-		#spusteni pozadovanych sluzeb
-		for serviceName in ${serviceArray[@]}
-		do
-			/bin/systemctl start "$serviceName"
-			RvLog "spusteni sluzby ($serviceName)"
-			sleep 1
-		done
-
-		#vytvori zip soubor, pokud byl dump uspesny
-		zip "${backupName}.zip" "$backupName" 
-		RvLog "zazipovani mysqldumpu dobehlo ($backupDir/${backupName}.zip)"
-	
-		#odstraneni dump souboru, pokud bylo zipovani uspesne
-		if [ "$?" -eq 0 ] && [ -f "$backupName" ]
-		then
-			rm "$backupName"
-			RvLog "odstraneni nekomprimovane zalohy databaze ($backupDir/$backupName)"
-		else
-			RvLog "zipovani mysqldumpu se nepodarilo ($backupDir/$backupName)"
-		fi
-	fi
-	cd - 
-	RvLog "cd -"
+	#spusteni pozadovanych sluzeb
+	for serviceName in ${serviceArray[@]}
+	do
+		/bin/systemctl start "$serviceName"
+		RvLog "spusteni sluzby ($serviceName)"
+		sleep 1
+	done
 fi
 
-
 #kontrola dostatecneho mnozstvi zaloh
-if [ $(find "$backupDir" -name "*.zip" | wc -l) -gt "$backupLimit" ]
+if [ $(find "$backupDir" -maxdepth 1 -mindepth 1 -type d | wc -l) -gt "$backupLimit" ]
 then
 	#odstraneni zaloh starsich nez $backupLimit
-	find "$backupDir" -type f -mtime +"$backupLimit" -exec rm {} \;
+	find "$backupDir" -type d -mtime +"$backupLimit" -exec rm -r {} \;
 	RvLog "odstraneni starych zaloh z ($backupDir)"
 else
 	LogError "POZOR - nedostatecny pocet zaloh zabbixu"
 fi
 
+Log "Zalohu lze obnovit pomoci:"
+Log "systemctl stop zabbix-server apache2"
+Log "psql -U postgres"
+Log "drop database zabbix;"
+Log "create database zabbix with owner=zabbix;"
+Log "\\c zabbix"
+Log "ALTER SCHEMA public OWNER TO zabbix;"
+Log "CREATE SCHEMA partitions;"
+Log "ALTER SCHEMA partitions OWNER TO zabbix;"
+Log "quit;"
+Log ""
+Log "obnova schematu a historie zvlast (pro rychlejsi zprovozneni):"
+Log "pg_restore -Uzabbix --clean --if-exists --dbname=zabbix --exit-on-error --format=directory --jobs=8 --schema=public --exclude-schema=partitions /var/backup/zabbix/$backupDate - obnova zakladniho schematu"
+Log "pg_restore -Uzabbix --clean --if-exists --dbname=zabbix --exit-on-error --format=directory --jobs=8 --schema=partitions --exclude-schema=public /var/backup/zabbix/$backupDate - obnova historie"
+Log "obnova vseho najednou - (delsi zprovozneni, mene prace):"
+Log "pg_restore -Uzabbix --clean --if-exists --dbname=zabbix --exit-on-error --format=directory --jobs=8 /var/backup/zabbix/$backupDate - obnova vseho najednou"
+Log "systemctl start zabbix-server apache2"
 
 MailSend
 Log "OK - zalohovani dokonceno"
