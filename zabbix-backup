@@ -8,7 +8,7 @@
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=1
+VERSION_PATCH=2
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # pri predani parametru -x provede zapnuti debug logu
@@ -59,7 +59,7 @@ write_pgpassFile()
 	{
 	echo "# hostname:port:database:username:password"
 	echo "localhost:5432:zabbix:zabbix:ZABBIX_PASSWORD"
-	} > "$pgpassFile"
+	} >> "$pgpassFile"
 	chmod 600 "$pgpassFile"
 }
 
@@ -83,7 +83,6 @@ write(){
 	echo "serviceArray=( zabbix-server )"
 	} > "$configFile"
 	LogError "zapsan konfiguracni soubor pro server ($HOSTNAME)"
-	write_pgpassFile
 }
 
 
