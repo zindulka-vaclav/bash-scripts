@@ -4,11 +4,18 @@
 # zaloha se provadi pomoci pg_dump ve formatu slozky - komprese ve vychozim stavu je vyssi, nez pg_dump | gzip
 
 
-#LIST _PROMENNE _EXITY _LOGOVANI _PODMINKY _KONFIGURACE _ZALOHA
+#LIST
+#_PROMENNE
+#_EXITY
+#_LOGOVANI
+#_PODMINKY
+#_KONFIGURACE
+#_ZABBIX_BACKUP_CRON
+#_ZALOHA
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=2
+VERSION_PATCH=3
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # pri predani parametru -x provede zapnuti debug logu
@@ -97,6 +104,17 @@ then
 	LogError "Zapsan novy soubor [$pgpassFile] nutno doplnit heslo pro uzivatele zabbix"
 fi
 
+#_ZABBIX_BACKUP_CRON
+#pokud neni zaznam pro postgresql-backup
+if [ ! -e /etc/cron.d/zabbix-backup ]
+then
+	#vytvori radek, ktery spousti dany script ve 2:00 a kompletni debug vystup se uklada do souboru ve /var/log
+	{ 
+		echo "#denni spousteni zabbix-backup"
+		echo "0 1 * * * root $sbinDir/zabbix-backup &>$outputFile"
+	} > /etc/cron.d/zabbix-backup
+	RvLog "zapsano spousteni zabbix-backup scriptu do cronu"
+fi
 
 #nacteni $configFile, pripadne zapsani defaultniho
 if [ -f "$configFile" ]
