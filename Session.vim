@@ -76,7 +76,7 @@ set winwidth=1
 exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
 exe 'vert 2resize ' . ((&columns * 119 + 119) / 239)
 argglobal
-let s:l = 35 - ((0 * winheight(0) + 28) / 57)
+let s:l = 35 - ((28 * winheight(0) + 28) / 57)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
@@ -476,11 +476,11 @@ if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
 42
-normal! 038|
+normal! 036|
 wincmd w
 exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
 exe 'vert 2resize ' . ((&columns * 119 + 119) / 239)
-tabnext 2
+tabnext 13
 set stal=1
 badd +1 backup
 badd +1 check-server

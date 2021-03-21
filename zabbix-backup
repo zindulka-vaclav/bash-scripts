@@ -15,7 +15,7 @@
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=3
+VERSION_PATCH=4
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # pri predani parametru -x provede zapnuti debug logu
@@ -167,9 +167,12 @@ done
 #_ZALOHA
 CheckDir "$backupDir"
 backupName="$backupDir/$backupTime"
+# dynamicky vypocet pouzitych CPU - od celkoveho poctu odecte 2, aby se zbyl prostor i na system a vydeli 2,
+# protoze pro kazdy pg_dump se zaroven spusti i postgres proces
+procNum=$((($(nproc) - 2) / 2))
 
 #vytvoreni zalohy
-pg_dump -Uzabbix -w --dbname=zabbix --create --clean --format=directory --file="$backupName" --jobs=8
+pg_dump -Uzabbix -w --dbname=zabbix --create --clean --format=directory --file="$backupName" --jobs="$procNum"
 RvLog "Vytvoren pg_dump databaze s nazvem ($backupDir/$backupTime)"
 
 #kontrola navratove hodnoty cd
