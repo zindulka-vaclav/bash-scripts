@@ -15,7 +15,7 @@
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=4
+VERSION_PATCH=5
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # pri predani parametru -x provede zapnuti debug logu
@@ -36,6 +36,9 @@ scriptName="zabbix-backup"
 backupDate="$(date +%F)"
 backupTime="$(date +%H-%M)"
 backupDir="/var/backup/zabbix/$backupDate/"
+
+# vychozi hodnota, kterou lze pretizit v configu
+procNum=8
 
 #cesta ke scriptu
 scriptDir="/usr/local/bash-scripts"
@@ -85,9 +88,10 @@ write(){
 	echo "#nastavuje, kolik zaloh zpetne se bude drzet"
 	echo "backupLimit=14"
 	echo ""
-	echo "#seznam sluzeb, ktere se budou zastavovat oddeleny mezerou - musi byt v zavorkach"
-	echo "#serviceArray=( zabbix-server apache2 )"
-	echo "serviceArray=( zabbix-server )"
+	echo "#urcuje pocet soubeznych procesu pro zalohovani"
+	echo "#pro kazdy jeden proces to znamena jeden pg_dump a jeden postgresql worker, takze opatrne"
+	echo "#rozumne maximum je 8, pokud to zvladnou disky"
+	echo "procNum=8"
 	} > "$configFile"
 	LogError "zapsan konfiguracni soubor pro server ($HOSTNAME)"
 }
@@ -135,14 +139,6 @@ then
 fi
 
 
-#kontrola nastaveni promennych z configu
-if [ -z "$serviceArray" ]
-then
-	LogError "nebyla nastavena promenna serviceArray=($serviceArray)"
-	exit 2
-fi
-
-
 #kontrola, zda mysqlPassword neobsahuje EMPTY
 if [ $(grep -c "ZABBIX_PASSWORD" "$pgpassFile") -ne 0 ]
 then
@@ -155,21 +151,9 @@ fi
 Log "zacatek zalohovani - zastaveni sluzeb"
 
 
-#zastaveni pozadovanych sluzeb
-for serviceName in ${serviceArray[@]}
-do
-	/bin/systemctl stop "$serviceName"
-	RvLog "zastaveni sluzby ($serviceName)"
-	sleep 1
-done
-
-
 #_ZALOHA
 CheckDir "$backupDir"
 backupName="$backupDir/$backupTime"
-# dynamicky vypocet pouzitych CPU - od celkoveho poctu odecte 2, aby se zbyl prostor i na system a vydeli 2,
-# protoze pro kazdy pg_dump se zaroven spusti i postgres proces
-procNum=$((($(nproc) - 2) / 2))
 
 #vytvoreni zalohy
 pg_dump -Uzabbix -w --dbname=zabbix --create --clean --format=directory --file="$backupName" --jobs="$procNum"
@@ -178,13 +162,7 @@ RvLog "Vytvoren pg_dump databaze s nazvem ($backupDir/$backupTime)"
 #kontrola navratove hodnoty cd
 if [ "$?" -eq 0 -a -d "$backupName" ]
 then
-	#spusteni pozadovanych sluzeb
-	for serviceName in ${serviceArray[@]}
-	do
-		/bin/systemctl start "$serviceName"
-		RvLog "spusteni sluzby ($serviceName)"
-		sleep 1
-	done
+	Log "Uspesne dokoncena zaloha databaze"
 fi
 
 #kontrola dostatecneho mnozstvi zaloh
