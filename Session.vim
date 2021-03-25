@@ -205,11 +205,11 @@ exe 'vert 2resize ' . ((&columns * 119 + 119) / 239)
 exe '3resize ' . ((&lines * 29 + 30) / 60)
 exe 'vert 3resize ' . ((&columns * 119 + 119) / 239)
 argglobal
-let s:l = 18 - ((15 * winheight(0) + 28) / 57)
+let s:l = 96 - ((56 * winheight(0) + 28) / 57)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-18
+96
 normal! 0
 wincmd w
 argglobal
@@ -366,11 +366,11 @@ normal! 027|
 wincmd w
 argglobal
 if bufexists("Changelog") | buffer Changelog | else | edit Changelog | endif
-let s:l = 38 - ((6 * winheight(0) + 28) / 57)
+let s:l = 39 - ((7 * winheight(0) + 28) / 57)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-38
+39
 normal! 044|
 wincmd w
 exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
@@ -392,21 +392,21 @@ set winwidth=1
 exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
 exe 'vert 2resize ' . ((&columns * 119 + 119) / 239)
 argglobal
-let s:l = 120 - ((0 * winheight(0) + 28) / 57)
+let s:l = 7 - ((6 * winheight(0) + 28) / 57)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-120
-normal! 08|
+7
+normal! 015|
 wincmd w
 argglobal
 if bufexists("Changelog") | buffer Changelog | else | edit Changelog | endif
-let s:l = 36 - ((32 * winheight(0) + 28) / 57)
+let s:l = 35 - ((31 * winheight(0) + 28) / 57)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-36
-normal! 0
+35
+normal! 032|
 wincmd w
 exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
 exe 'vert 2resize ' . ((&columns * 119 + 119) / 239)
@@ -436,11 +436,11 @@ normal! 06|
 wincmd w
 argglobal
 if bufexists("Changelog") | buffer Changelog | else | edit Changelog | endif
-let s:l = 39 - ((35 * winheight(0) + 28) / 57)
+let s:l = 40 - ((36 * winheight(0) + 28) / 57)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-39
+40
 normal! 029|
 wincmd w
 exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
@@ -462,25 +462,25 @@ set winwidth=1
 exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
 exe 'vert 2resize ' . ((&columns * 119 + 119) / 239)
 argglobal
-let s:l = 1 - ((0 * winheight(0) + 28) / 57)
+let s:l = 91 - ((34 * winheight(0) + 28) / 57)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-1
-normal! 0
+91
+normal! 09|
 wincmd w
 argglobal
 if bufexists("Changelog") | buffer Changelog | else | edit Changelog | endif
-let s:l = 42 - ((36 * winheight(0) + 28) / 57)
+let s:l = 43 - ((37 * winheight(0) + 28) / 57)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-42
+43
 normal! 061|
 wincmd w
 exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
 exe 'vert 2resize ' . ((&columns * 119 + 119) / 239)
-tabnext 13
+tabnext 11
 set stal=1
 badd +1 backup
 badd +1 check-server
@@ -488,8 +488,8 @@ badd +1 debug
 badd +1 funkce
 badd +1 get_groups.sh
 badd +1 initialize
-badd +105 mysql-backup
-badd +87 rpz_unbound
+badd +1 mysql-backup
+badd +1 rpz_unbound
 badd +1 rsync-backup
 badd +1 server-backup
 badd +1 server-rsync-backup
