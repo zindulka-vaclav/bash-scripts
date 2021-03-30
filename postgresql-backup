@@ -4,7 +4,7 @@
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=2
+VERSION_PATCH=3
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 #LIST
@@ -37,7 +37,7 @@ scriptName="postgresql-backup"
 backupDir="/var/backup/postgresql"
 backupLimit=14
 todayDate="$(date +%F)"
-todayDateTime="$(date +%F_%H-%M)"
+todayTime="$(date +%H-%M)"
 
 scriptDir="/usr/local/bash-scripts"
 verbose=0
@@ -136,52 +136,22 @@ RvLog "nastaveno pole backupARRAY (${backupARRAY[@]})"
 #provede dumpy vsech existujicich databazi
 for database in ${backupARRAY[@]}
 do
-	backupNameSql="$database-${todayDateTime}.sql"
-	backupName="$backupNameSql.gz"
 	backupPath="$backupDir/$database/$todayDate"
 	CheckDir "$backupPath"
 
-	#provede dump databaze s vynechanim tabulek v partitions - pro moznost rychle obnovy
+	# vynechani databaze zabbix, zalohuje se pomoci zabbix-beckup
 	if [[ "$database" =~ "zabbix" ]]
 	then
-		backupBasicName="schema-$backupName"
-		backupHistoryName="history-$backupName"
-
-		# pokud nazev databaze obsahuje zabbix, provede dump s vynechanim parititions tabulek pro history a trends
-		# sed provede okomentovani radku, ktere sahaji na plpgsql extension a gzip soubor zabali
-		pg_dump -U"$postgresqlUser"  -T 'partitions.*' -w "$database" | sed -e 's/^\(CREATE\ EXTENSION\|COMMENT\ ON\ EXTENSION\)/--&/g' | gzip > "$backupPath/$backupBasicName"
-		RvLog "Vytvoren postgresql-dump databaze s nazvem ($backupPath/$backupBasicName)"
-
-		# nacte navratovou hodnotu - funkce RvLog ji vraci
-		rv="$?"
-
-		# separatni dump historie a trendu
-		pg_dump -U"$postgresqlUser"  -t 'partitions.*' -w "$database" | sed -e 's/^\(CREATE\ EXTENSION\|COMMENT\ ON\ EXTENSION\)/--&/g' | gzip > "$backupPath/$backupHistoryName"
-		RvLog "Vytvoren postgresql-dump databaze s nazvem ($backupPath/$backupHistoryName)"
-
-		# okomentuje radky obsahujici upravy plpgsql extension, aby bylo mozne obnovovat pod uzivatelem zabbix
-		# pri obnovovani pomoci pg_restore to neni potreba, ale pri volani pres psql ano - uzivatel nema prava
-		#sed -e 's/^\(CREATE\ EXTENSION\|COMMENT\ ON\ EXTENSION\)/--&/g' -i  "$backupPath/backupBasicName"
-
-		Log "Zalohu lze obnovit pomoci:"
-		Log "systemctl stop zabbix-server apache2"
-		Log "psql -U postgres"
-		Log "drop database zabbix;"
-		Log "create database zabbix with owner=zabbix;"
-		Log "gunzip -c $backupPath/$backupBasicName | psql -U zabbix -d zabbix -v ON_ERROR_STOP=1"
-		# pro obnoveni historie a trendu se rozbali plna zaloha rovnou na vstup psql - na errorech nezastavuje
-		Log "gunzip -c $backupPath/$backupHistoryName | psql -U zabbix -d zabbix"
-		Log "systemctl start zabbix-server apache2"
-	# nezabixove databaze dumpne zvlast
-	else
-		# bezne zalohovani bez vynechavani - vcetne pripadne databaze zabbixu
-		pg_dump -U"$postgresqlUser" -w "$database" | gzip > "$backupPath/$backupName"
-
-		RvLog "Vytvoren postgresql-dump databaze s nazvem ($backupPath/$backupName)"
-
-		# nacte navratovou hodnotu - funkce RvLog ji vraci
-		rv="$?"
+		continue
 	fi
+
+
+	# bezne zalohovani bez vynechavani - vcetne pripadne databaze zabbixu
+	pg_dump -U"$postgresqlUser" -w --dbname="$database" --format=directory --file="$backupPath/$todayTime"
+	RvLog "Vytvoren postgresql-dump databaze ($backupPath/$todayTime)"
+
+	# nacte navratovou hodnotu - funkce RvLog ji vraci
+	rv="$?"
 
 	# pokud byl dump uspesny - prohleda slozky pro prislusnou databazi a vymaze stare zalohy
 	if [ "$rv" -eq 0 ] && cd "$backupDir/$database"
