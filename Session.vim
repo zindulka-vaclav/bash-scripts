@@ -287,16 +287,16 @@ set winwidth=1
 exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
 exe 'vert 2resize ' . ((&columns * 119 + 119) / 239)
 argglobal
-let s:l = 161 - ((48 * winheight(0) + 28) / 57)
+let s:l = 160 - ((47 * winheight(0) + 28) / 57)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-161
-normal! 061|
+160
+normal! 030|
 wincmd w
 argglobal
 if bufexists("Changelog") | buffer Changelog | else | edit Changelog | endif
-let s:l = 20 - ((8 * winheight(0) + 28) / 57)
+let s:l = 20 - ((0 * winheight(0) + 28) / 57)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
@@ -462,12 +462,12 @@ set winwidth=1
 exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
 exe 'vert 2resize ' . ((&columns * 119 + 119) / 239)
 argglobal
-let s:l = 91 - ((34 * winheight(0) + 28) / 57)
+let s:l = 18 - ((17 * winheight(0) + 28) / 57)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-91
-normal! 09|
+18
+normal! 015|
 wincmd w
 argglobal
 if bufexists("Changelog") | buffer Changelog | else | edit Changelog | endif
@@ -476,11 +476,11 @@ if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
 44
-normal! 061|
+normal! 037|
 wincmd w
 exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
 exe 'vert 2resize ' . ((&columns * 119 + 119) / 239)
-tabnext 8
+tabnext 13
 set stal=1
 badd +1 backup
 badd +1 check-server

@@ -15,7 +15,7 @@
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=5
+VERSION_PATCH=6
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # pri predani parametru -x provede zapnuti debug logu
@@ -169,7 +169,7 @@ fi
 if [ $(find "$backupDir" -maxdepth 1 -mindepth 1 -type d | wc -l) -gt "$backupLimit" ]
 then
 	#odstraneni zaloh starsich nez $backupLimit
-	find "$backupDir" -type d -mtime +"$backupLimit" -exec rm -r {} \;
+	find "$backupDir" -maxdepth 1 -mindepth 1 -type d -mtime +"$backupLimit" -exec rm -r {} \;
 	RvLog "odstraneni starych zaloh z ($backupDir)"
 else
 	LogError "POZOR - nedostatecny pocet zaloh zabbixu"
