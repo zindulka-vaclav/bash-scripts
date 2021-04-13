@@ -35,7 +35,7 @@ fi
 scriptName="zabbix-backup"
 backupDate="$(date +%F)"
 backupTime="$(date +%H-%M)"
-backupDir="/var/backup/zabbix/$backupDate/"
+backupDir="/var/backup/zabbix/"
 
 # vychozi hodnota, kterou lze pretizit v configu
 procNum=8
@@ -152,12 +152,12 @@ Log "zacatek zalohovani - zastaveni sluzeb"
 
 
 #_ZALOHA
-CheckDir "$backupDir"
-backupName="$backupDir/$backupTime"
+CheckDir "$backupDir/$backupDate/"
+backupName="$backupDir/$backupDate/$backupTime"
 
 #vytvoreni zalohy
 pg_dump -Uzabbix -w --dbname=zabbix --create --clean --format=directory --file="$backupName" --jobs="$procNum"
-RvLog "Vytvoren pg_dump databaze s nazvem ($backupDir/$backupTime)"
+RvLog "Vytvoren pg_dump databaze s nazvem ($backupName)"
 
 #kontrola navratove hodnoty cd
 if [ "$?" -eq 0 -a -d "$backupName" ]
