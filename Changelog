@@ -21,6 +21,10 @@ masteru
 1.0.2 - doplneno baleni male zalohy a komentovani radku s extensions
 1.0.1 - doplnen dump databaze zabbixu s vynechanim tabulek partitions.*
 
+# postgresql-backup-one
+1.0.0 - tvorba scriptu pro zalohovani jedne databaze bez pouziti uzivatele
+postgres
+
 # rpz_backup
 1.0.4 - doplnen zapis cron souboru
 1.0.3 - doplnen force pro gzip

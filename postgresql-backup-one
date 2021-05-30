@@ -1,0 +1,163 @@
+#!/bin/bash
+#postgresql-backup-one
+#provadi postgresql dumpy zvolene databaze - nevyzaduje pristup pod uzivatelem postgres
+
+VERSION_MAJOR=1
+VERSION_MINOR=0
+VERSION_PATCH=0
+VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
+
+#LIST
+#_PROMENNE
+#_EXITY
+#_LOGOVANI
+#_PODMINKY
+#_KONFIGURACE
+#_POSTGRESQL_BACKUP_CRON
+#_ZALOHA
+
+# zajisti, ze pri selhani jednoho prikazu v pipe selze cela pipe
+set -o pipefail
+
+# pri predani parametru -x provede zapnuti debug logu
+if [ "$1" = "-x" ]
+then
+	set -x
+fi
+
+# vypsani verze
+if [ "$1" = "-V" -o "$1" = "--version" ]
+then
+	echo "$VERSION"
+	exit 0
+fi
+
+#_PROMENNE
+scriptName="postgresql-backup-one"
+backupDir="/var/backup/postgresql"
+backupLimit=14
+todayDate="$(date +%F)"
+todayTime="$(date +%H-%M)"
+
+scriptDir="/usr/local/bash-scripts"
+verbose=0
+deBug=0
+
+#_EXITY
+#exit 1		#disablovany script
+#exit 2		#spatne nastavena nektera z promennych
+
+
+#_LOGOVANI
+
+#nacteni definice funkci Log,LogError,RvLog,MailSend z knihovny
+. $scriptDir/funkce	
+Log "script ($scriptName) - zacatek"
+echo "$$" > "$startFile"
+Log "($startFile) set to ($$)"
+
+#_KONFIGURACE
+#zapise konfiguracni soubor, ze ktereho bude nasledne nacitat hodnoty
+write(){
+	if [ -f "$configFile" ]
+	then
+		cp "$configFile" "${configFile}.back"
+		RvLog "provedena zaloha konfigurace do (${configFile}.back)"
+	fi
+
+	{
+		echo "# vypne/zapne (1/0) provadeni scriptu"
+		echo "disabled=1"
+		echo ""
+		echo "# nastavuje, kolik zaloh zpetne se bude drzet"
+		echo "backupLimit=14"
+		echo ""
+		echo "# nazev databaze pro zalohovani"
+		echo "postgresqlDatabase=\"DEFAULT_DATABASE_NAME\""
+		echo ""
+		echo "# uzivatel, pod kterym se budou provadet dumpy"
+		echo "postgresqlUser=\"DEFAULT_DATABASE_USER\""
+		echo ""
+		echo "# heslo uzivatele pro pripojeni do databaze"
+		echo "# pokud je pouzit .pgpass, nebo nastaven trust, muze byt prazdne"
+		echo "postgresqlPassword=\"DEFAULT_DATABASE_PASSWORD\""
+	} > "$configFile"
+	LogError "zapsan konfiguracni soubor pro server ($HOSTNAME)"
+}
+
+
+#_POSTGRESQL_BACKUP_CRON
+#pokud neni zaznam pro postgresql-backup-one
+if [ ! -e /etc/cron.d/postgresql-backup-one ]
+then
+	#vytvori radek, ktery spousti dany script ve 2:00 a kompletni debug vystup se uklada do souboru ve /var/log
+	{ 
+		echo "#denni spousteni postgresql-backup-one"
+		echo "0 1 * * * root $sbinDir/postgresql-backup-one &>$outputFile"
+	} > /etc/cron.d/postgresql-backup-one
+	RvLog "zapsano spousteni postgresql-backup-one scriptu do cronu"
+fi
+
+
+#nacte konfiguracni soubor
+if [ -f "$configFile" ]
+then
+	. "$configFile"
+	Log "nacten konfiguracni soubor ($configFile)"
+else
+	write
+	. "$configFile"
+fi
+
+
+#nastavenim disabled na 1 se vypne spousteni scriptu, uprav $configFile, mail se neposila
+if [ "$disabled" -eq 1 ]
+then
+	Log "script ($scriptName) byl disablovan v konfiguracnim souboru ($configFile)"
+	MailSend
+	exit 1
+fi
+
+
+#kontrola nastaveni promennych 
+if [ -z "$backupLimit" ] || [ -z "$postgresqlUser" ] || \
+	 [ "$postgresqlUser" = "DEFAULT_DATABASE_USER" ] || [ "$postgresqlPassword" = "DEFAULT_DATABASE_PASSWORD" ] || \
+	 [ "$postgresqlDatabase" = "DEFAULT_DATABASE_NAME" ]
+then
+	LogError "nebyla nastavena nektera z promennych:
+backupLimit=($backupLimit),
+backupDir=($backupDir),
+postgresqlDatabase=($postgresqlDatabase),
+postgresqlUser=($postgresqlUser),
+postgresqlPassword=($postgresqlPassword)"
+	MailSend
+	exit 2
+else
+	export PGPASSWORD="$postgresqlPassword"
+fi
+
+
+#_ZALOHA
+backupPath="$backupDir/$postgresqlDatabase/$todayDate"
+CheckDir "$backupPath"
+
+# bezne zalohovani bez vynechavani - vcetne pripadne databaze zabbixu
+pg_dump -U"$postgresqlUser" -w --dbname="$postgresqlDatabase" --format=directory --file="$backupPath/$todayTime"
+RvLog "Vytvoren postgresql-dump databaze ($backupPath/$todayTime)"
+
+# nacte navratovou hodnotu - funkce RvLog ji vraci
+rv="$?"
+
+# pokud byl dump uspesny - prohleda slozky pro prislusnou databazi a vymaze stare zalohy
+if [ "$rv" -eq 0 ] && cd "$backupDir/$postgresqlDatabase"
+then
+	#odstraneni zaloh starsich nez $backupLimit
+	find "$backupDir/$postgresqlDatabase" -maxdepth 1 -mindepth 1 -type d -mtime +"$backupLimit" -exec rm -rf {} \;
+	RvLog "odstraneni starych zaloh z ($backupDir/$postgresqlDatabase)"
+	cd - > /dev/null
+fi
+
+unset PGPASSWORD
+
+MailSend
+exit 0

@@ -24,6 +24,7 @@ tabnew
 tabnew
 tabnew
 tabnew
+tabnew
 tabrewind
 edit backup
 set splitbelow splitright
@@ -205,12 +206,12 @@ exe 'vert 2resize ' . ((&columns * 119 + 119) / 239)
 exe '3resize ' . ((&lines * 29 + 30) / 60)
 exe 'vert 3resize ' . ((&columns * 119 + 119) / 239)
 argglobal
-let s:l = 96 - ((56 * winheight(0) + 28) / 57)
+let s:l = 10 - ((9 * winheight(0) + 28) / 57)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-96
-normal! 0
+10
+normal! 059|
 wincmd w
 argglobal
 if bufexists("Changelog") | buffer Changelog | else | edit Changelog | endif
@@ -287,12 +288,12 @@ set winwidth=1
 exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
 exe 'vert 2resize ' . ((&columns * 119 + 119) / 239)
 argglobal
-let s:l = 160 - ((47 * winheight(0) + 28) / 57)
+let s:l = 3 - ((2 * winheight(0) + 28) / 57)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-160
-normal! 030|
+3
+normal! 089|
 wincmd w
 argglobal
 if bufexists("Changelog") | buffer Changelog | else | edit Changelog | endif
@@ -302,6 +303,41 @@ exe s:l
 normal! zt
 20
 normal! 075|
+wincmd w
+exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
+exe 'vert 2resize ' . ((&columns * 119 + 119) / 239)
+tabnext
+edit postgresql-backup-one
+set splitbelow splitright
+wincmd _ | wincmd |
+vsplit
+1wincmd h
+wincmd w
+set nosplitbelow
+set nosplitright
+wincmd t
+set winminheight=0
+set winheight=1
+set winminwidth=0
+set winwidth=1
+exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
+exe 'vert 2resize ' . ((&columns * 119 + 119) / 239)
+argglobal
+let s:l = 161 - ((54 * winheight(0) + 28) / 57)
+if s:l < 1 | let s:l = 1 | endif
+exe s:l
+normal! zt
+161
+normal! 0
+wincmd w
+argglobal
+if bufexists("Changelog") | buffer Changelog | else | edit Changelog | endif
+let s:l = 25 - ((24 * winheight(0) + 28) / 57)
+if s:l < 1 | let s:l = 1 | endif
+exe s:l
+normal! zt
+25
+normal! 05|
 wincmd w
 exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
 exe 'vert 2resize ' . ((&columns * 119 + 119) / 239)
@@ -331,11 +367,11 @@ normal! 015|
 wincmd w
 argglobal
 if bufexists("Changelog") | buffer Changelog | else | edit Changelog | endif
-let s:l = 25 - ((23 * winheight(0) + 28) / 57)
+let s:l = 29 - ((27 * winheight(0) + 28) / 57)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-25
+29
 normal! 034|
 wincmd w
 exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
@@ -366,11 +402,11 @@ normal! 027|
 wincmd w
 argglobal
 if bufexists("Changelog") | buffer Changelog | else | edit Changelog | endif
-let s:l = 40 - ((7 * winheight(0) + 28) / 57)
+let s:l = 44 - ((7 * winheight(0) + 28) / 57)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-40
+44
 normal! 044|
 wincmd w
 exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
@@ -392,20 +428,20 @@ set winwidth=1
 exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
 exe 'vert 2resize ' . ((&columns * 119 + 119) / 239)
 argglobal
-let s:l = 7 - ((6 * winheight(0) + 28) / 57)
+let s:l = 40 - ((39 * winheight(0) + 28) / 57)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-7
-normal! 015|
+40
+normal! 021|
 wincmd w
 argglobal
 if bufexists("Changelog") | buffer Changelog | else | edit Changelog | endif
-let s:l = 36 - ((32 * winheight(0) + 28) / 57)
+let s:l = 40 - ((36 * winheight(0) + 28) / 57)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-36
+40
 normal! 032|
 wincmd w
 exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
@@ -436,11 +472,11 @@ normal! 06|
 wincmd w
 argglobal
 if bufexists("Changelog") | buffer Changelog | else | edit Changelog | endif
-let s:l = 41 - ((37 * winheight(0) + 28) / 57)
+let s:l = 45 - ((41 * winheight(0) + 28) / 57)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-41
+45
 normal! 029|
 wincmd w
 exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
@@ -471,16 +507,16 @@ normal! 015|
 wincmd w
 argglobal
 if bufexists("Changelog") | buffer Changelog | else | edit Changelog | endif
-let s:l = 44 - ((38 * winheight(0) + 28) / 57)
+let s:l = 48 - ((42 * winheight(0) + 28) / 57)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-44
+48
 normal! 037|
 wincmd w
 exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
 exe 'vert 2resize ' . ((&columns * 119 + 119) / 239)
-tabnext 13
+tabnext 9
 set stal=1
 badd +1 backup
 badd +1 check-server
@@ -493,9 +529,10 @@ badd +1 rpz_unbound
 badd +1 rsync-backup
 badd +1 server-backup
 badd +1 server-rsync-backup
-badd +159 zabbix-backup
-badd +1 Changelog
+badd +1 zabbix-backup
+badd +44 Changelog
 badd +1 postgresql-backup
+badd +1 postgresql-backup-one
 if exists('s:wipebuf') && len(win_findbuf(s:wipebuf)) == 0
   silent exe 'bwipe ' . s:wipebuf
 endif

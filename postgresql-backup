@@ -1,6 +1,6 @@
 #!/bin/bash
 #postgresql-backup
-#provadi postgresql dumpy zvolenych databazi
+#provadi postgresql dumpy vsech databazi - vyzaduje uzivatele postgres pristupneho heslem
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
