@@ -1,5 +1,5 @@
 #!/bin/bash
-#verze 1.0.1
+#verze 1.0.2
 #logovani 
 #definice funkci pro logovani behu programu a posilani vystupu mailem
 #_LIST #_Log #_LogError #_RvLog #_MailSend #_CheckDir 
@@ -89,14 +89,8 @@ Log(){
 #_LogError
 LogError(){
 	#provede ERROR zapis predaneho parametru do logu s nazvnem scriptu v (/var/log/scripty)
-	if [ "$verbose" -eq 1 ]
-	then
-		echo "$(date '+%b %d %T') $HOSTNAME $scriptName: ERROR - $1" | tee -a "$logFile"
-		touch "$errorFile"
-	else
-		echo "$(date '+%b %d %T') $HOSTNAME $scriptName: ERROR - $1" >> "$logFile"
-		touch "$errorFile"
-	fi
+	echo "$(date '+%b %d %T') $HOSTNAME $scriptName: ERROR - $1" | tee -a "$logFile"
+	touch "$errorFile"
 }
 
 

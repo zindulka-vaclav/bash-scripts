@@ -3,12 +3,13 @@
 # provadi postgresql dupmove zalohy zabbixu - mozna nebude od veci zastavovat sluzbu
 # zaloha se provadi pomoci pg_dump ve formatu slozky - komprese ve vychozim stavu je vyssi, nez pg_dump | gzip
 
+# zajisti, ze pri selhani jednoho prikazu v pipe selze cela pipe
+set -o pipefail
 
 #LIST
 #_PROMENNE
 #_EXITY
 #_LOGOVANI
-#_PODMINKY
 #_KONFIGURACE
 #_ZABBIX_BACKUP_CRON
 #_ZALOHA
@@ -106,6 +107,7 @@ if [ ! -f "$pgpassFile" ]
 then
 	write_pgpassFile
 	LogError "Zapsan novy soubor [$pgpassFile] nutno doplnit heslo pro uzivatele zabbix"
+	exit 1
 fi
 
 #_ZABBIX_BACKUP_CRON
@@ -148,7 +150,7 @@ then
 fi
 
 
-Log "zacatek zalohovani - zastaveni sluzeb"
+Log "zacatek zalohovani"
 
 
 #_ZALOHA

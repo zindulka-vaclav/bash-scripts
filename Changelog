@@ -4,6 +4,9 @@
 # check-server
 1.0.0 - vychozi verze scriptu
 
+# funkce
+1.0.2 - zruseno vypinani verbose vystupu pro LogError
+
 # get_groups.sh
 1.0.0 - vychozi verze s doplnenymi kontrolnimi mechanismy
 
@@ -52,3 +55,7 @@ postgres
 1.0.2 - oprava destruktivniho zapisu do .pgpass
 1.0.1 - prepracovana verze pro postgresql s rozlozenim na vice CPU
 1.0.0 - vychozi verze scriptu - pouze pro mysql databazi
+
+# zabbix-sync
+1.0.0 - vychozi verze scriptu pro synchronizaci databaze zabbixu na zalozni
+server
