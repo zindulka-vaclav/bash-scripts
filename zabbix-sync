@@ -201,7 +201,7 @@ Log "zacatek zalohy databaze na ostrem serveru"
 if ! ssh "$remoteUser"@"$remoteIP" << EOF
 rm -r $remoteBackupDir
 pg_dump -U$remoteDbUser -w --dbname=$remoteDbName --create --clean \
-	--format=directory --file=$remoteBackupDir --jobs=$procNum --schema=public"
+	--format=directory --file=$remoteBackupDir --jobs=$procNum --schema=public
 EOF
 then
 	LogError "Problem pri vytvareni zalohy databaze na ostrem serveru"
