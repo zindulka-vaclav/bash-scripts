@@ -57,5 +57,6 @@ postgres
 1.0.0 - vychozi verze scriptu - pouze pro mysql databazi
 
 # zabbix-sync
+1.0.1 - oprava vychoziho nazvu databaze + opravy syntaxe
 1.0.0 - vychozi verze scriptu pro synchronizaci databaze zabbixu na zalozni
 server

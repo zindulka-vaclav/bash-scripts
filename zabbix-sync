@@ -23,7 +23,7 @@ set -o pipefail
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=0
+VERSION_PATCH=1
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 
@@ -83,7 +83,7 @@ write_pgpassFile()
 	{
 	echo "# hostname:port:database:username:password"
 	echo "localhost:5432:zabbix:zabbix:ZABBIX_PASSWORD"
-	echo "localhost:5432:zabbix:zabbix-test:ZABBIX_PASSWORD"
+	echo "localhost:5432:zabbix:zabbix_test:ZABBIX_PASSWORD"
 	} >> "$pgpassFile"
 	chmod 600 "$pgpassFile"
 }
@@ -115,10 +115,10 @@ write()
 	echo "# pristup musi byt definovany v ~/.pgpass"
 	echo "remoteDbUser=zabbix"
 	echo ""
-	echo "# nazev databaze na zaloznim serveru, kam se obnovi zaloha z ostreho - zabbix | zabbix-test"
+	echo "# nazev databaze na zaloznim serveru, kam se obnovi zaloha z ostreho - zabbix | zabbix_test"
 	echo "# pristup musi byt definovany v ~/.pgpass"
-	echo "# pro testovani lze posilat do testovaci databaze - pozor, na jine hodnoty nez zabbix, nebo zabbix-test"
-	echo "localDbName=zabbix-test"
+	echo "# pro testovani lze posilat do testovaci databaze - pozor, na jine hodnoty nez zabbix, nebo zabbix_test"
+	echo "localDbName=zabbix_test"
 	echo ""
 	echo "# uzivatel pro pristup k databazi na zaloznim serveru - idealne zachovavat zabbix"
 	echo "# pristup musi byt definovany v ~/.pgpass"
