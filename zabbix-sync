@@ -24,7 +24,7 @@ set -o pipefail
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=3
+VERSION_PATCH=4
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 
@@ -150,14 +150,14 @@ fi
 
 #_ZABBIX_SYNC_CRON
 #pokud neni zaznam pro postgresql-backup
-if [ ! -e /etc/cron.d/zabbix-backup ]
+if [ ! -e /etc/cron.d/zabbix-sync ]
 then
 	#vytvori zaznam, ktery pravidelne spousti dany script v nastaveny cas a kompletni vystup se uklada do /var/log
 	{ 
-		echo "#denni spousteni zabbix-backup"
-		echo "0 2 * * * root $sbinDir/zabbix-backup &>$outputFile"
-	} > /etc/cron.d/zabbix-backup
-	RvLog "zapsano spousteni zabbix-backup scriptu do cronu"
+		echo "#denni spousteni zabbix-sync"
+		echo "0 2 * * * root $sbinDir/zabbix-sync &>$outputFile"
+	} > /etc/cron.d/zabbix-sync
+	RvLog "zapsano spousteni zabbix-sync scriptu do cronu"
 fi
 
 #nacteni $configFile, pripadne zapsani defaultniho
@@ -185,7 +185,7 @@ fi
 #kontrola, zda mysqlPassword neobsahuje EMPTY
 if [ $(grep -c "ZABBIX_PASSWORD" "$pgpassFile") -ne 0 ]
 then
-	LogError "POZOR, neni nastaveno heslo pro zabbix-backup v [$pgpassFile]"
+	LogError "POZOR, neni nastaveno heslo pro zabbix-sync v [$pgpassFile]"
 	MailSend
 	exit 1
 fi

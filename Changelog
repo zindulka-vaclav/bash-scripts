@@ -57,6 +57,7 @@ postgres
 1.0.0 - vychozi verze scriptu - pouze pro mysql databazi
 
 # zabbix-sync
+1.0.4 - oprava cronu pro spousteni scriptu
 1.0.3 - zmena ukladani lokalnich zaloh, doplneno verzovani pro moznost sahnuti
 zpet v hodinovych krocich
 1.0.2 - doplnen chybejici MailSend
