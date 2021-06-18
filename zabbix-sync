@@ -228,7 +228,7 @@ if ! psql -Upostgres -v ON_ERROR_STOP=1 << EOF
 DROP DATABASE IF EXISTS $localDbName;
 CREATE DATABASE $localDbName OWNER $localDbUser;
 \c $localDbName
-ALTER SCHEMA pulbic OWNER TO $localDbUser;
+ALTER SCHEMA public OWNER TO $localDbUser;
 CREATE SCHEMA trends AUTHORIZATION $localDbUser;
 CREATE SCHEMA history AUTHORIZATION $localDbUser;
 EOF
