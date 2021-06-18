@@ -23,7 +23,7 @@ set -o pipefail
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=1
+VERSION_PATCH=2
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 
@@ -58,6 +58,7 @@ fi
 if [ "$1" = "-V" -o "$1" = "--version" ]
 then
 	echo "$VERSION"
+	MailSend
 	exit 0
 fi
 
@@ -141,6 +142,7 @@ if [ ! -f "$pgpassFile" ]
 then
 	write_pgpassFile
 	LogError "Zapsan novy soubor [$pgpassFile] nutno doplnit heslo pro uzivatele zabbix"
+	MailSend
 	exit 1
 fi
 
@@ -165,6 +167,7 @@ else
 	write
 	. "$configFile"
 	LogError "Byl zapsan konfiguracni soubor, nutno upravit konfiguraci"
+	MailSend
 	exit 1
 fi
 
@@ -172,6 +175,7 @@ fi
 if [ "$disabled" -eq 1 ]
 then
 	Log "script ($scriptName) byl disablovan v konfiguracnim souboru ($configFile)"
+	MailSend
 	exit 1
 fi
 
@@ -191,6 +195,7 @@ if [ $(ping -c1 "$dnsName" | grep -c "$remoteIP") -eq 0 ]
 then
 	LogError "Problem pri overeni DNS zaznamu [$dnsName] nemiri na pozadovanou IP [$remoteIP]"
 	LogError "Script nebude pokracovat, aby nedoslo k prepsani produkcni databaze"
+	MailSend
 	exit 1
 fi
 # _kontrola_DNS
@@ -205,6 +210,7 @@ pg_dump -U$remoteDbUser -w --dbname=$remoteDbName --create --clean \
 EOF
 then
 	LogError "Problem pri vytvareni zalohy databaze na ostrem serveru"
+	MailSend
 	exit 2
 else
 	Log "Uspesne vytvorena zaloha ostre databaze"
@@ -216,6 +222,7 @@ Log "stazeni zalohy na zalozni server"
 if ! (rm -r "$localBackupDir"; scp -r "$remoteUser"@"$remoteIP":"$remoteBackupDir" "$localBackupDir")
 then
 	LogError "Problem pri stahovani zalohy z ostreho serveru [$remoteIP]"
+	MailSend
 	exit 3
 else
 	Log "Uspesne stazena zaloha z remote serveru [$remoteIP]"
@@ -234,6 +241,7 @@ CREATE SCHEMA history AUTHORIZATION $localDbUser;
 EOF
 then
 	LogError "Problem pri dropu a znovu vytvoreni databaze $localDbName"
+	MailSend
 	exit 4
 else
 	Log "Uspesne dropnuta a znovu vytvorena databaze $localDbName"
@@ -248,10 +256,12 @@ if ! (cd "$localBackupDir" &&\
 			psql -U "$localDbUser" -c "VACUUM ANALYZE;")
 then
 	LogError "Problem pri obnove databaze na zaloznim serveru"
+	MailSend
 	exit 5
 else
 	Log "Uspesne obnovena databaze na zaloznim serveru"
 fi
 # _obnova_zalohy_na_zaloznim_serveru
 
+MailSend
 exit 0
