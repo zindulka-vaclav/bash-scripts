@@ -6,6 +6,7 @@
 # musi se tez zajistit, ze nenastane dlouhodoby soubeh sluzeb zabbix serveru, protoze se castecne
 # vyuziva pasivnich proxy a vyziraly by si data navzajem
 # zalozni server musi mit pristup na ostry pres ssh klic
+# zalohuje se kazdou hodinu do jine slozky, takze v pripade potizi je mozne sahnout az den dozadu
 
 # zajisti, ze pri selhani jednoho prikazu v pipe selze cela pipe
 set -o pipefail
@@ -23,7 +24,7 @@ set -o pipefail
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=2
+VERSION_PATCH=3
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 
@@ -37,8 +38,9 @@ remoteUser="zabbix-sync"
 # slozka, kam se na ostrem serveru provede zaloha
 remoteBackupDir="zabbix-sync"
 
-# slozka, kam se na lokalnim serveru stahne remote zaloha
-localBackupDir="/var/backup/$remoteBackupDir/"
+# slozka, kam se na lokalnim serveru stahne remote zaloha - aby bylo kam sahnout, uklada se kazdou hodinu
+# do jine slozky
+localBackupDir="/root/$remoteBackupDir/$(date +%H)/"
 
 #cesta ke scriptu
 scriptDir="/usr/local/bash-scripts"
@@ -219,7 +221,9 @@ fi
 
 # _stazeni_zalohy_ostre_databaze
 Log "stazeni zalohy na zalozni server"
-if ! (rm -r "$localBackupDir"; scp -r "$remoteUser"@"$remoteIP":"$remoteBackupDir" "$localBackupDir")
+if ! (rm -r "$localBackupDir" 2> /dev/null
+			mkdir -p "$localBackupDir"
+			scp -r "$remoteUser"@"$remoteIP":"$remoteBackupDir" "$localBackupDir" > /dev/null)
 then
 	LogError "Problem pri stahovani zalohy z ostreho serveru [$remoteIP]"
 	MailSend
