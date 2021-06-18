@@ -222,7 +222,6 @@ fi
 # _stazeni_zalohy_ostre_databaze
 Log "stazeni zalohy na zalozni server"
 if ! (rm -r "$localBackupDir" 2> /dev/null
-			mkdir -p "$localBackupDir"
 			scp -r "$remoteUser"@"$remoteIP":"$remoteBackupDir" "$localBackupDir" > /dev/null)
 then
 	LogError "Problem pri stahovani zalohy z ostreho serveru [$remoteIP]"
