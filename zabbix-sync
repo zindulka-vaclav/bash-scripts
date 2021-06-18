@@ -252,7 +252,7 @@ fi
 Log "obnova zalohy na zaloznim serveru"
 if ! (cd "$localBackupDir" &&\
 			pg_restore -U "$localDbUser" -w --dbname="$localDbName" \
-				--if-exists --clean --schema=public --jobs="$procNum" . &&\
+				--if-exists --clean --schema=public --jobs="$procNum" .
 			psql -U "$localDbUser" -c "VACUUM ANALYZE;")
 then
 	LogError "Problem pri obnove databaze na zaloznim serveru"
