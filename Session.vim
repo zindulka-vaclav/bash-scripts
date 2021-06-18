@@ -548,7 +548,7 @@ if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
 60
-normal! 042|
+normal! 066|
 wincmd w
 exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
 exe 'vert 2resize ' . ((&columns * 119 + 119) / 239)
@@ -567,7 +567,7 @@ badd +1 rsync-backup
 badd +1 server-backup
 badd +1 server-rsync-backup
 badd +1 zabbix-backup
-badd +188 zabbix-sync
+badd +208 zabbix-sync
 badd +1 Changelog
 badd +1 postgresql-backup
 if exists('s:wipebuf') && len(win_findbuf(s:wipebuf)) == 0

@@ -24,7 +24,7 @@ set -o pipefail
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=4
+VERSION_PATCH=5
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 
@@ -205,7 +205,7 @@ fi
 Log "zacatek zalohy databaze na ostrem serveru"
 
 # _zaloha_ostre_databaze
-if ! ssh "$remoteUser"@"$remoteIP" << EOF
+if ! ssh "$remoteUser"@"$remoteIP" > /dev/null << EOF
 rm -r $remoteBackupDir
 pg_dump -U$remoteDbUser -w --dbname=$remoteDbName --create --clean \
 	--format=directory --file=$remoteBackupDir --jobs=$procNum --schema=public
@@ -234,7 +234,7 @@ fi
 
 # _drop_databaze_na_zaloznim_serveru
 Log "drop databaze na zaloznim serveru"
-if ! psql -Upostgres -v ON_ERROR_STOP=1 << EOF
+if ! psql -Upostgres -v ON_ERROR_STOP=1 > /dev/null << EOF
 DROP DATABASE IF EXISTS $localDbName;
 CREATE DATABASE $localDbName OWNER $localDbUser;
 \c $localDbName
@@ -256,7 +256,7 @@ Log "obnova zalohy na zaloznim serveru"
 if ! (cd "$localBackupDir" &&\
 			pg_restore -U "$localDbUser" -w --dbname="$localDbName" \
 				--if-exists --clean --schema=public --jobs="$procNum" .
-			psql -U "$localDbUser" -c "VACUUM ANALYZE;")
+			psql -U "$localDbUser" -c "VACUUM ANALYZE;" > /dev/null)
 then
 	LogError "Problem pri obnove databaze na zaloznim serveru"
 	MailSend
