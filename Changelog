@@ -58,6 +58,7 @@ postgres
 1.0.0 - vychozi verze scriptu - pouze pro mysql databazi
 
 # zabbix-sync
+1.0.9 - doplneno zastavovani sluzby apache pred synchronizaci
 1.0.8 - zrusen vacuum analyze, zasekavalo se to na nem
 1.0.7 - doplnen restart postgresql pred dropem databaze
 1.0.6 - osetreno Pseudo-terminal will not be allocated because stdin is not a
