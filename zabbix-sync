@@ -24,7 +24,7 @@ set -o pipefail
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=5
+VERSION_PATCH=6
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 
@@ -205,7 +205,9 @@ fi
 Log "zacatek zalohy databaze na ostrem serveru"
 
 # _zaloha_ostre_databaze
-if ! ssh "$remoteUser"@"$remoteIP" > /dev/null << EOF
+# parametr -T zajisti, ze se nesnazi vytvorit pseude terminal a nezobrazuje se hlaska:
+# Pseudo-terminal will not be allocated because stdin is not a terminal.
+if ! ssh -tt "$remoteUser"@"$remoteIP" > /dev/null << EOF
 rm -r $remoteBackupDir
 pg_dump -U$remoteDbUser -w --dbname=$remoteDbName --create --clean \
 	--format=directory --file=$remoteBackupDir --jobs=$procNum --schema=public
