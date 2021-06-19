@@ -160,9 +160,6 @@ then
 	RvLog "zapsano spousteni zabbix-sync scriptu do cronu"
 fi
 
-# kill predchozi instance, pokud se zasekla
-pkill zabbix-sync
-
 #nacteni $configFile, pripadne zapsani defaultniho
 if [ -f "$configFile" ]
 then
