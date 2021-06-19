@@ -1,5 +1,5 @@
 #!/bin/bash
-#verze 1.0.2
+#verze 1.0.3
 #logovani 
 #definice funkci pro logovani behu programu a posilani vystupu mailem
 #_LIST #_Log #_LogError #_RvLog #_MailSend #_CheckDir 
@@ -215,11 +215,11 @@ TestRunFile()
 			:
 			LogError "($scriptPid) neodpovida ($scriptName), ignoruje se stary run soubor ($runFile)"
 		else
-
+			kill "$scriptPid"
 			#pokud na pidu stale bezi puvodni proces, skonci a nic nedela
-			LogError "script ($scriptName) stale bezi ($scriptPid), nelze spoustet dvakrat ($scriptName) - ($runFile)"
-			MailSend "keep"
-			exit 6
+			LogError "script ($scriptName) stale bezi ($scriptPid), proveden kill puvodniho ($scriptName) - ($runFile)"
+			#MailSend "keep"
+			#exit 6
 		fi
 	else
 		# kontrola existence slozky
