@@ -24,7 +24,7 @@ set -o pipefail
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=6
+VERSION_PATCH=7
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 
@@ -222,9 +222,12 @@ fi
 # _zaloha_ostre_databaze
 
 # _stazeni_zalohy_ostre_databaze
+# stahne zalohu databaze a pred dropem provede restart postgresql, protoze kdyz
+# zustanou navazane connectiony, nelze databazi dropnout
 Log "stazeni zalohy na zalozni server"
-if ! (rm -r "$localBackupDir" 2> /dev/null
-			scp -r "$remoteUser"@"$remoteIP":"$remoteBackupDir" "$localBackupDir" > /dev/null)
+if ! (rm -r "$localBackupDir" 2> /dev/null;
+			scp -r "$remoteUser"@"$remoteIP":"$remoteBackupDir" "$localBackupDir" > /dev/null &&\
+			systemctl restart postgresql)
 then
 	LogError "Problem pri stahovani zalohy z ostreho serveru [$remoteIP]"
 	MailSend
@@ -241,8 +244,8 @@ DROP DATABASE IF EXISTS $localDbName;
 CREATE DATABASE $localDbName OWNER $localDbUser;
 \c $localDbName
 ALTER SCHEMA public OWNER TO $localDbUser;
-CREATE SCHEMA trends AUTHORIZATION $localDbUser;
-CREATE SCHEMA history AUTHORIZATION $localDbUser;
+CREATE SCHEMA IF NOT EXISTS trends AUTHORIZATION $localDbUser;
+CREATE SCHEMA IF NOT EXISTS history AUTHORIZATION $localDbUser;
 EOF
 then
 	LogError "Problem pri dropu a znovu vytvoreni databaze $localDbName"
