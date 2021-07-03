@@ -282,8 +282,7 @@ fi
 # _obnova_zalohy_na_zaloznim_serveru
 
 # _prenos_certifikatu
-if ! rsync -a "$remoteUser"@"$remoteIP":/etc/letsencrypt/ /etc --exclude=/etc/letsencrypt/accounts \
-		 --exclude=/etc/letsencrypt/keys
+if ! rsync -a zabbix-sync@nmszabbix.tlapnet.cz:/etc/letsencrypt/{archive,csr,live,renewal} /etc/letsencrypt
 then
 	LogError "Problem pri prenosu certifikatu letsencryptu"
 	exit 7
