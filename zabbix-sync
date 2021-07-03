@@ -285,6 +285,7 @@ fi
 if ! rsync -a zabbix-sync@nmszabbix.tlapnet.cz:/etc/letsencrypt/{archive,csr,live,renewal} /etc/letsencrypt
 then
 	LogError "Problem pri prenosu certifikatu letsencryptu"
+	MailSend
 	exit 7
 else
 	Log "Uspesne preneseny certifikaty letsencryptu"
@@ -295,6 +296,7 @@ fi
 if ! systemctl restart apache2 zabbix-server
 then
 	LogError "Problem se zapinanim apache nebo zabbix-serveru po prenosu databaze"
+	MailSend
 	exit 8
 else
 	Log "Uspesne spusten apache nebo zabbix-serveru po prenosu databaze"
