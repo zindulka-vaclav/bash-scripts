@@ -21,10 +21,11 @@ set -o pipefail
 # _stazeni_zalohy_ostre_databaze
 # _drop_databaze_na_zaloznim_serveru
 # _obnova_zalohy_na_zaloznim_serveru
+# _restart_apache_a_zabbix_serveru
 
 VERSION_MAJOR=1
 VERSION_MINOR=1
-VERSION_PATCH=1
+VERSION_PATCH=2
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 
@@ -280,13 +281,26 @@ else
 fi
 # _obnova_zalohy_na_zaloznim_serveru
 
+# _prenos_certifikatu
+if ! rsync -a "$remoteUser"@"$remoteIP":/etc/letsencrypt/ /etc --exclude=/etc/letsencrypt/accounts \
+		 --exclude=/etc/letsencrypt/keys
+then
+	LogError "Problem pri prenosu certifikatu letsencryptu"
+	exit 7
+else
+	Log "Uspesne preneseny certifikaty letsencryptu"
+fi
+# _prenos_certifikatu
+
+# _restart_apache_a_zabbix_serveru
 if ! systemctl restart apache2 zabbix-server
 then
 	LogError "Problem se zapinanim apache nebo zabbix-serveru po prenosu databaze"
-	exit 7
+	exit 8
 else
 	Log "Uspesne spusten apache nebo zabbix-serveru po prenosu databaze"
 fi
+# _restart_apache_a_zabbix_serveru
 
 MailSend
 exit 0

@@ -534,12 +534,12 @@ set winwidth=1
 exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
 exe 'vert 2resize ' . ((&columns * 119 + 119) / 239)
 argglobal
-let s:l = 27 - ((15 * winheight(0) + 28) / 57)
+let s:l = 9 - ((8 * winheight(0) + 28) / 57)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-27
-normal! 015|
+9
+normal! 0
 wincmd w
 argglobal
 if bufexists("Changelog") | buffer Changelog | else | edit Changelog | endif
@@ -548,7 +548,7 @@ if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
 61
-normal! 061|
+normal! 047|
 wincmd w
 exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
 exe 'vert 2resize ' . ((&columns * 119 + 119) / 239)
@@ -567,7 +567,7 @@ badd +1 rsync-backup
 badd +1 server-backup
 badd +1 server-rsync-backup
 badd +1 zabbix-backup
-badd +27 zabbix-sync
+badd +240 zabbix-sync
 badd +61 Changelog
 badd +1 postgresql-backup
 if exists('s:wipebuf') && len(win_findbuf(s:wipebuf)) == 0
