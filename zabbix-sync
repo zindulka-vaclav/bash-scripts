@@ -24,7 +24,7 @@ set -o pipefail
 
 VERSION_MAJOR=1
 VERSION_MINOR=1
-VERSION_PATCH=0
+VERSION_PATCH=1
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 
@@ -202,11 +202,12 @@ then
 	MailSend
 	exit 1
 else
-	if ! systemctl stop apache2
+	if ! systemctl stop apache2 zabbix-server
 	then
-		LogError "Problem se zastavovanim apache pred prenosem databaze"
+		LogError "Problem se zastavovanim apache nebo zabbix-serveru pred prenosem databaze"
+		exit 2
 	else
-		Log "Uspesne zastaven apache pred prenosem databaze"
+		Log "Uspesne zastaven apache nebo zabbix-serveru pred prenosem databaze"
 	fi
 fi
 # _kontrola_DNS
@@ -224,7 +225,7 @@ EOF
 then
 	LogError "Problem pri vytvareni zalohy databaze na ostrem serveru"
 	MailSend
-	exit 2
+	exit 3
 else
 	Log "Uspesne vytvorena zaloha ostre databaze"
 fi
@@ -240,7 +241,7 @@ if ! (rm -r "$localBackupDir" 2> /dev/null;
 then
 	LogError "Problem pri stahovani zalohy z ostreho serveru [$remoteIP]"
 	MailSend
-	exit 3
+	exit 4
 else
 	Log "Uspesne stazena zaloha z remote serveru [$remoteIP]"
 fi
@@ -259,7 +260,7 @@ EOF
 then
 	LogError "Problem pri dropu a znovu vytvoreni databaze $localDbName"
 	MailSend
-	exit 4
+	exit 5
 else
 	Log "Uspesne dropnuta a znovu vytvorena databaze $localDbName"
 fi
@@ -273,17 +274,18 @@ if ! (cd "$localBackupDir" &&\
 then
 	LogError "Problem pri obnove databaze na zaloznim serveru"
 	MailSend
-	exit 5
+	exit 6
 else
 	Log "Uspesne obnovena databaze na zaloznim serveru"
 fi
 # _obnova_zalohy_na_zaloznim_serveru
 
-if ! systemctl restart apache2
+if ! systemctl restart apache2 zabbix-server
 then
-	LogError "Problem se zapinanim apache po prenosu databaze"
+	LogError "Problem se zapinanim apache nebo zabbix-serveru po prenosu databaze"
+	exit 7
 else
-	Log "Uspesne spusten apache po prenosu databaze"
+	Log "Uspesne spusten apache nebo zabbix-serveru po prenosu databaze"
 fi
 
 MailSend
