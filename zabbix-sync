@@ -23,8 +23,8 @@ set -o pipefail
 # _obnova_zalohy_na_zaloznim_serveru
 
 VERSION_MAJOR=1
-VERSION_MINOR=0
-VERSION_PATCH=9
+VERSION_MINOR=1
+VERSION_PATCH=0
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 
@@ -41,6 +41,8 @@ remoteBackupDir="zabbix-sync"
 # slozka, kam se na lokalnim serveru stahne remote zaloha - aby bylo kam sahnout, uklada se kazdou hodinu
 # do jine slozky
 localBackupDir="/root/$remoteBackupDir/$(date +%H)/"
+
+mkdir -p "/root/$remoteBackupDir"
 
 #cesta ke scriptu
 scriptDir="/usr/local/bash-scripts"
