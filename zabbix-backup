@@ -16,7 +16,7 @@ set -o pipefail
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=6
+VERSION_PATCH=7
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # pri predani parametru -x provede zapnuti debug logu
@@ -107,6 +107,7 @@ if [ ! -f "$pgpassFile" ]
 then
 	write_pgpassFile
 	LogError "Zapsan novy soubor [$pgpassFile] nutno doplnit heslo pro uzivatele zabbix"
+	MailSend
 	exit 1
 fi
 
@@ -137,6 +138,7 @@ fi
 if [ "$disabled" -eq 1 ]
 then
 	Log "script ($scriptName) byl disablovan v konfiguracnim souboru ($configFile)"
+	MailSend
 	exit 1
 fi
 

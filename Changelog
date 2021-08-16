@@ -49,6 +49,7 @@ postgres
 1.0.0 - vychozi verze scriptu
 
 # zabbix-backup
+1.0.7 - doplnen chybejici MailSend
 1.0.6 - oprava mazani starych backupu
 1.0.5 - vzhledem k mozne dobe behu zruseno zastavovani sluzeb
 1.0.4 - uprava poctu soubeznych jobu
