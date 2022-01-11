@@ -1,6 +1,6 @@
 # scripty pro zalohovani
 - scripty umoznuji hlidani pomoci zabbixove sablony
-- `git clone git@git.tlapnet.dev:tools/bash-scripts.git /usr/local/bash-scripts`
+- `git clone git@gitlab.com:zindulka.vaclav/bash-scripts.git /usr/local/bash-scripts`
 - staci stahnout script initialize, ktery provede git clone do `/usr/local/bash-scripts` - cestu zachovavat
 - pokud udelas git clone rucne, pridej na konec parametr s cestou `/usr/local/bash-scripts`
 - spust script `initialize`
