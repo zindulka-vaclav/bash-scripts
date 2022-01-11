@@ -46,9 +46,9 @@ deBug=0
 
 #nacteni definice funkci Log,LogError,RvLog,MailSend z knihovny
 . $scriptDir/funkce	
-Log "script ($scriptName) - zacatek"
+LogInfo "script ($scriptName) - zacatek"
 echo "$$" > "$startFile"
-Log "($startFile) set to ($$)"
+LogInfo "($startFile) set to ($$)"
 
 
 #_KONFIGURACE
@@ -90,18 +90,18 @@ then
 	if [ $(grep -c "disabled=\"" "$configFile") -ne 0 ]
 	then
 		sed -i 's/disabled=\"\([0-9]\+\)\"/disabled=\1/' "$configFile"
-		Log "nahrazeni promenne disabled bez uvozovek"
+		LogInfo "nahrazeni promenne disabled bez uvozovek"
 	fi
 
 	#pokud je v configu promenna backupLimit s kvotovanou hodnotou, tak ji odkvotuje
 	if [ $(grep -c "backupLimit=\"" "$configFile") -ne 0 ]
 	then
 		sed -i 's/backupLimit=\"\([0-9]\+\)\"/backupLimit=\1/' "$configFile"
-		Log "nahrazeni promenne backupLimit bez uvozovek"
+		LogInfo "nahrazeni promenne backupLimit bez uvozovek"
 	fi
 
 	. "$configFile"
-	Log "nacten konfiguracni soubor ($configFile)"
+	LogInfo "nacten konfiguracni soubor ($configFile)"
 else
 	write
 	. "$configFile"
@@ -112,7 +112,7 @@ fi
 #pri prvotnim spusteni je script defaultne disablovany
 if [ "$disabled" -eq 1 ]
 then
-	Log "script ($scriptName) je disablovany v ($configFile)"
+	LogInfo "script ($scriptName) je disablovany v ($configFile)"
 	MailSend
 	exit 0
 fi
@@ -131,8 +131,8 @@ case "$rsyncMode" in
 			MailSend
 			exit 2
 		else
-			Log "case - nfspush - byly nacteny tyto promenne"
-			Log "backupList=($backupList), backupLimit=($backupLimit), nfsMountPoint=($nfsMountPoint), nfsMountDevice=($nfsMountDevice)"
+			LogInfo "case - nfspush - byly nacteny tyto promenne"
+			LogInfo "backupList=($backupList), backupLimit=($backupLimit), nfsMountPoint=($nfsMountPoint), nfsMountDevice=($nfsMountDevice)"
 
 			#posklada mount point zalohy a nazev zalozni slozky
 			backupDir="$nfsMountPoint/$lastBackup"
@@ -161,8 +161,8 @@ case "$rsyncMode" in
 			MailSend
 			exit 3
 		else
-			Log "case - nfspull - byly nacteny tyto promenne"
-			Log "backupList=($backupList), backupLimit=($backupLimit), nfsMountPoint=($nfsMountPoint), nfsMountDevice=($nfsMountDevice), localDir=($localDir)"
+			LogInfo "case - nfspull - byly nacteny tyto promenne"
+			LogInfo "backupList=($backupList), backupLimit=($backupLimit), nfsMountPoint=($nfsMountPoint), nfsMountDevice=($nfsMountDevice), localDir=($localDir)"
 
 			#posklada mount point zalohy a nazev zalozni slozky
 			backupDir="$localDir/$lastBackup"
@@ -191,8 +191,8 @@ case "$rsyncMode" in
 			MailSend
 			exit 4
 		else
-			Log "case - local - byly nacteny tyto promenne"
-			Log "backupList=($backupList), backupLimit=($backupLimit), localDir=($localDir)"
+			LogInfo "case - local - byly nacteny tyto promenne"
+			LogInfo "backupList=($backupList), backupLimit=($backupLimit), localDir=($localDir)"
 
 			#posklada mount point zalohy a nazev zalozni slozky
 			backupDir="$localDir/$lastBackup"
@@ -218,10 +218,10 @@ esac
 #kontrola nastaveni promenne backupMode
 case "$backupMode" in
 	bdir)
-		Log "nastaven backupMode pro spousteni rsyncu s parametrem --backup --backup-Dir"
+		LogInfo "nastaven backupMode pro spousteni rsyncu s parametrem --backup --backup-Dir"
 		;;
 	hardlink)
-		Log "nastaven backupMode pro spousteni rsyncu bez backup parametru a zalohovanim pomoci hardlinkovych kopii"
+		LogInfo "nastaven backupMode pro spousteni rsyncu bez backup parametru a zalohovanim pomoci hardlinkovych kopii"
 		;;
 	*)
 		LogError "nebyl nastaven parametr backupMode, nebo byl nastaven spatne ($backupMode)"
@@ -235,7 +235,7 @@ esac
 #v pripade nfs zalohovani zkontroluje odpojeni oddilu a pripoji ho
 if [ "$rsyncMode" = "nfspush" ] || [ "$rsyncMode" = "nfspull" ]
 then
-	Log "Kontrola odpojeni mount pointu"
+	LogInfo "Kontrola odpojeni mount pointu"
 
 	#kontrola odpojeni nfsMountDevice, pokud nebyl oddil odpojen, da mu unmount, aby se nezalohovalo na seknuty mount
 	if [ "$(mount | grep -c $nfsMountDevice)" -ne 0 ]	
@@ -244,7 +244,7 @@ then
 		umount -l -f "$nfsMountPoint"
 		RvLog "umount oddilu ($nfsMountDevice) z ($nfsMountPoint)"
 	fi
-	Log "pripojeni ($nfsMountDevice) na ($nfsMountPoint)"
+	LogInfo "pripojeni ($nfsMountDevice) na ($nfsMountPoint)"
 	mount -t nfs -o "$nfsMountOptions" "$nfsMountDevice" "$nfsMountPoint"
 	RvLog "pripojeni oddilu ($nfsMountDevice) na ($nfsMountPoint)"
 	if [ "$?" -ne 0 ]
@@ -253,12 +253,12 @@ then
 		MailSend
 		exit 5
 	else
-		Log "uspesne pripojen ($nfsMountDevice) na ($nfsMountPoint)"
+		LogInfo "uspesne pripojen ($nfsMountDevice) na ($nfsMountPoint)"
 	fi
 fi
 
 
-Log "Zacatek zalohovani"
+LogInfo "Zacatek zalohovani"
 
 #pole se seznamem zalohovanych veci
 backupARRAY=($(echo "$backupList $defaultList"))
@@ -346,7 +346,7 @@ do
 			;;
 	esac
 done
-Log "dokonceno zalohovani rsync - ($rsyncMode) - ($backupMode)"
+LogInfo "dokonceno zalohovani rsync - ($rsyncMode) - ($backupMode)"
 
 
 
@@ -363,11 +363,11 @@ fi
 #zhardlinkuje slozku se zalohou do archivacni slozky
 if [ -d "$archiveDir" ] && [ "$backupMode" = "hardlink" ]	
 then
-	Log "opakovane, rucni spusteni scriptu ($scriptName)"
+	LogInfo "opakovane, rucni spusteni scriptu ($scriptName)"
 fi
 
 
-Log "odstraneni starych zaloh ze slozky (${backupDir%last})"
+LogInfo "odstraneni starych zaloh ze slozky (${backupDir%last})"
 find "${backupDir%last}" -maxdepth 1 -type d -mtime +"$backupLimit" \! -name "$lastBackup" -exec rm -r {} \;
 RvLog "prohledana slozka (${backupDir%last}) a odstraneny zalohy starsi nez ($backupLimit) dnu"
 
@@ -379,12 +379,12 @@ RvLog "sync disku"
 #v pripade nfs zalohovani provede odpojeni oddilu
 if [ "$rsyncMode" = "nfspush" ] || [ "$rsyncMode" = "nfspull" ]
 then
-	Log "odpojeni nfs oddilu ($nfsMountDevice)"
+	LogInfo "odpojeni nfs oddilu ($nfsMountDevice)"
 	umount -l -f "$nfsMountPoint"
 	RvLog "umount ($nfsMountPoint)"
 fi
 
 
 MailSend
-Log "OK - ($scriptName) zalohovani dokonceno"
+LogInfo "OK - ($scriptName) zalohovani dokonceno"
 exit 0

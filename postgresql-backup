@@ -2,42 +2,36 @@
 #postgresql-backup
 #provadi postgresql dumpy vsech databazi - vyzaduje uzivatele postgres pristupneho heslem
 
+# set pipes to fail after first error, preserving last return value of failed process
+set -o pipefail
+
+# set all parameters passed during execution of the script as single parameters
+set -- "$@"
+
 VERSION_MAJOR=1
 VERSION_MINOR=0
 VERSION_PATCH=4
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
-#LIST
-#_PROMENNE
-#_EXITY
-#_LOGOVANI
+# Declare_variables
+# Load_functions
+# Define_functions
+# _Usage
+# _write_config
+# Process_parameters
 #_PODMINKY
 #_KONFIGURACE
 #_POSTGRESQL_BACKUP_CRON
 #_ZALOHA
 
-# zajisti, ze pri selhani jednoho prikazu v pipe selze cela pipe
-set -o pipefail
-
-# pri predani parametru -x provede zapnuti debug logu
-if [ "$1" = "-x" ]
-then
-	set -x
-fi
-
-# vypsani verze
-if [ "$1" = "-V" -o "$1" = "--version" ]
-then
-	echo "$VERSION"
-	exit 0
-fi
-
-#_PROMENNE
+# Declare_variables
 scriptName="postgresql-backup"
 backupDir="/var/backup/postgresql"
 backupLimit=14
 todayDate="$(date +%F)"
 todayTime="$(date +%H-%M)"
+configFile=""
+cronFile="/etc/cron.d/$scriptName"
 
 # variable to pass postgres variables if set in config file
 postgresqlParams=""
@@ -45,98 +39,214 @@ postgresqlParams=""
 scriptDir="/usr/local/bash-scripts"
 verbose=0
 deBug=0
+# Declare_variables
 
-#_EXITY
-#exit 1		#disablovany script
-#exit 2		#spatne nastavena nektera z promennych
-
-
-#_LOGOVANI
-
+# Load_functions
 #nacteni definice funkci Log,LogError,RvLog,MailSend z knihovny
-. $scriptDir/funkce	
-Log "script ($scriptName) - zacatek"
+source $scriptDir/funkce
+LogInfo "script ($scriptName) - start"
 echo "$$" > "$startFile"
-Log "($startFile) set to ($$)"
+LogInfo "($startFile) set to ($$)"
+# Load_functions
 
-#_KONFIGURACE
-#zapise konfiguracni soubor, ze ktereho bude nasledne nacitat hodnoty
-write(){
-	if [ -f "$configFile" ]
-	then
-		cp "$configFile" "${configFile}.back"
-		RvLog "provedena zaloha konfigurace do (${configFile}.back)"
-	fi
-	{
-	echo "#vypne/zapne (1/0) provadeni scriptu"
-	echo "disabled=1"
-	echo "#nastavuje, kolik zaloh zpetne se bude drzet"
-	echo "backupLimit=14"
-	echo "#uzivatel, pod kterym se budou provadet dumpy... v pripade vice databazi musi byt postgres"
-	echo "postgresqlUser=\"postgres\""
-	echo "#heslo uzivatele pro postgresql"
-	echo "postgresqlPassword=\"\""
-	echo "# port pro pripojeni k databazi - 5432"
-	echo "postgresqlPort=\"\""
-	echo "# hostname / IP pro pripojeni k databazi - localhost | 192.168.1.2"
-	echo "postgresqlHost=\"\""
-	} > "$configFile"
-	LogError "zapsan konfiguracni soubor pro server ($HOSTNAME)"
+# Define_functions
+# _Usage
+# print usage of script
+Usage() {
+  echo -e "Script for creating PostgreSQL dumps.
+Allows to run in multiple instances with different config files using -c parameter
+to support backups of dockerized database.
+
+Allows different setups of accessing the database.
+  - using sudo -u postgres pg_dump
+	- using docker exec DOCKER_CONTAINER pg_dump
+  - pg_dump using \$HOME/.pgpass file
+	- pg_dump using password set in config file
+
+To be able to access postgresql database using pgpass
+create /root/.pgpass inside postgres container
+Set its privileges to 600 and its content to:
+# hostname:port:database:username:password
+*:POSTGRES_PORT:*:POSTGRES_USERNAME:POSTGRES_PASSWORD
+
+In case of Docker image create .pgpass file in \$HOME of user running psql and pg_dump command
+postgres, root.
+
+Usage:
+  $SCRIPT_NAME  [OPTIONS] [PARAMETERS]
+
+Supported parameters:
+  -h | --help          Print usage informations
+  -V | --version       Print version of the script
+  -c CONFIG_FILE_PATH  Set different config file to run multiple instances
+
+Supported options:
+  -x               Bash debug output of the script - can be used with any other parameter
+  -d               Script debug output of logs - can be used with any other parameter
+  -v               Script verbose output of logs - can be used with any other option"
 }
+# _Usage
 
+# _write_config
+#zapise konfiguracni soubor, ze ktereho bude nasledne nacitat hodnoty
+write_config(){
+  disabled=1
+  backupLimit=14
+  postgresqlCommandPrefix=""
+  postgresqlUser="postgres"
+  postgresqlPassword=""
+  postgresqlPort=""
+  postgresqlHost=""
+  
+  if [ -f "$configFile" ]
+  then
+    cp "$configFile" "${configFile}.back"
+    RvLog "provedena zaloha konfigurace do (${configFile}.back)"
+    source "${configFile}.back"
+  fi
+  
+  {
+    echo "#vypne/zapne (1/0) provadeni scriptu"
+    echo "disabled=$disabled"
+    echo "#nastavuje, kolik zaloh zpetne se bude drzet"
+    echo "backupLimit=$backupLimit"
+    echo "# prefix for commands - keep space at the end of command"
+    echo "sudo -u postgres | docker exec DOCKER_CONTAINER "
+    echo "postgresqlUser=\"$postgresqlUser\""
+    echo "#uzivatel, pod kterym se budou provadet dumpy... v pripade vice databazi musi byt postgres"
+    echo "postgresqlUser=\"$postgresqlUser\""
+    echo "#heslo uzivatele pro postgresql"
+    echo "postgresqlPassword=\"$postgresqlPassword\""
+    echo "# port pro pripojeni k databazi - 5432"
+    echo "postgresqlPort=\"$postgresqlPort\""
+    echo "# hostname / IP pro pripojeni k databazi - localhost | 192.168.1.2"
+    echo "postgresqlHost=\"$postgresqlHost\""
+  } > "$configFile"
+  LogError "zapsan konfiguracni soubor pro server ($HOSTNAME)"
+}
+# _write_config
+# Define_functions
+
+# Process_parameters
+while [ "$#" -gt 0 ]
+do
+  # PARAMETERS
+  # print version and exit
+  if [ "$1" = "-V" ] || [ "$1" = "--version" ]
+  then
+    echo "$VERSION"
+    exit 0
+    # print help and exit
+  elif [ "$1" = "-h" ] || [ "$1" = "--help" ]
+  then
+    Usage
+    exit 0
+    # Config file
+  elif [ "$1" = "-c" ]
+  then
+    # load config file parameter
+    shift
+    configFile="$1"
+    LogWarning "Defined alternative config file $configFile"
+    # OPTIONS
+  elif [ "$1" = "-x" ]
+  then
+    LogWarning "Detected parameter $1 for bash debug output of the script"
+    set -x
+  elif [ "$1" = "-d" ]
+  then
+    LogWarning "Detected parameter $1 for debug output of log messages"
+    DEBUG_OUTPUT="true"
+  elif [ "$1" = "-v" ]
+  then
+    LogWarning "Detected parameter $1 for verbose output of log messages"
+    verbose=1
+  else
+    LogError "Unknown parameter detected: $1"
+    Usage
+    exit 1
+  fi
+  
+  shift
+done
+
+# Process_parameters
 #_POSTGRESQL_BACKUP_CRON
-#pokud neni zaznam pro postgresql-backup
-if [ ! -e /etc/cron.d/postgresql-backup ]
+# create new cron file
+if [ ! -e "$cronFile" ]
 then
-	#vytvori radek, ktery spousti dany script ve 2:00 a kompletni debug vystup se uklada do souboru ve /var/log
-	{ 
-		echo "#denni spousteni postgresql-backup"
-		echo "0 1 * * * root $sbinDir/postgresql-backup &>$outputFile"
-	} > /etc/cron.d/postgresql-backup
+  #vytvori radek, ktery spousti dany script ve 2:00 a kompletni debug vystup se uklada do souboru ve /var/log
+  {
+    echo "# denni spousteni postgresql-backup"
+    echo "0 1 * * * root $sbinDir/postgresql-backup -c $configDir/$configFile &>$outputFile"
+  } > "$cronFile"
+  RvLog "zapsano spousteni postgresql-backup scriptu do cronu"
+elif [ $(grep -c "postgresql-backup -c") -eq 0 ]
+then
+	if  [[ "$configFile" =~ "${scriptName}.conf" ]]
+	then
+		# replace original cron command to command with config file parameter
+		sed -i -e "s/postgresql-backup/& -c $configDir\/$configFile/g" "$cronFile"
+		LogWarning "Changed default log command in $cronFile"
+	else
+	# add line for next config file
+  {
+    echo "# denni spousteni postgresql-backup"
+    echo "0 2 * * * root $sbinDir/postgresql-backup -c $configDir/$configFile &>$outputFile"
+  } >> "$cronFile"
+  RvLog "zapsano spousteni postgresql-backup scriptu do cronu"
+	fi
+else
+	# add line for next config file
+	{
+		echo "# denni spousteni postgresql-backup"
+		echo "0 2 * * * root $sbinDir/postgresql-backup -c $configDir/$configFile &>$outputFile"
+	} >> "$cronFile"
 	RvLog "zapsano spousteni postgresql-backup scriptu do cronu"
 fi
 
 #nacte konfiguracni soubor
 if [ -f "$configFile" ]
 then
-	source "$configFile"
-	Log "nacten konfiguracni soubor ($configFile)"
+  source "$configFile"
+  LogInfo "nacten konfiguracni soubor ($configFile)"
 else
-	write
-	. "$configFile"
+  write_config
+  source "$configFile"
 fi
 
 #nastavenim disabled na 1 se vypne spousteni scriptu, uprav $configFile, mail se neposila
 if [ "$disabled" -eq 1 ]
 then
-	Log "script ($scriptName) byl disablovan v konfiguracnim souboru ($configFile)"
-	MailSend
-	exit 1
+  LogInfo "script ($scriptName) byl disablovan v konfiguracnim souboru ($configFile)"
+  MailSend
+  exit 1
 fi
 
-#kontrola nastaveni promennych 
+#kontrola nastaveni promennych
 if [ -z "$backupLimit" ] || [ -z "$postgresqlUser" ] || [ -z "$backupDir" ]
 then
-	LogError "nebyla nastavena nektera z promennych backupLimit=($backupLimit),\n
-						postgresqlUser=($postgresqlUser), postgresqlPassword=($postgresqlPassword), backupDir=($backupDir)"
-	MailSend
-	exit 2
-else
-	export PGPASSWORD="$postgresqlPassword"
+  LogError "nebyla nastavena nektera z promennych backupLimit=($backupLimit),\n
+  postgresqlUser=($postgresqlUser), postgresqlPassword=($postgresqlPassword), backupDir=($backupDir)"
+  MailSend
+  exit 2
+elif [ -n "$postgresqlPassword" ]
+then
+  export PGPASSWORD="$postgresqlPassword"
 fi
 
 # if port is set in configuration, pass it to variable
 if [ -n "$postgresqlPort" ]
 then
-	Log "Postgresql port set to $postgresqlPort"
-	postgresqlParams="$postgresqlParams -p $postgresqlPort"
+  LogInfo "Postgresql port set to $postgresqlPort"
+  postgresqlParams="$postgresqlParams -p $postgresqlPort"
 fi
 
 # if host is set in configuration, pass it to variable
 if [ -n "$postgresqlHost" ]
 then
-	Log "Postgresql host set to $postgresqlHost"
-	postgresqlParams="$postgresqlParams -h $postgresqlHost"
+  LogInfo "Postgresql host set to $postgresqlHost"
+  postgresqlParams="$postgresqlParams -h $postgresqlHost"
 fi
 
 #_ZALOHA
@@ -144,38 +254,39 @@ fi
 #-w se nepta na heslo, ale musi byt nastavena promenna PGPASSWORD
 #-At vynecha kudrlinky
 #-c prikaz predany postgresql
-backupARRAY=($(psql -U"$postgresqlUser" "$postgresqlParams" -w -At \
-	-c "select datname from pg_database where not datistemplate and datallowconn order by datname;"))
+backupARRAY=($(${postgresqlCommandPrefix}psql -U"$postgresqlUser" "$postgresqlParams" -w -At \
+-c "select datname from pg_database where not datistemplate and datallowconn order by datname;"))
 RvLog "nastaveno pole backupARRAY (${backupARRAY[@]})"
 
 #provede dumpy vsech existujicich databazi
 for database in ${backupARRAY[@]}
 do
-	backupPath="$backupDir/$database/$todayDate"
-	CheckDir "$backupPath"
-
-	# vynechani databaze zabbix, zalohuje se pomoci zabbix-beckup
-	if [[ "$database" =~ "zabbix" ]]
+  backupPath="$backupDir/$database/$todayDate"
+  CheckDir "$backupPath"
+  
+  # vynechani databaze zabbix, zalohuje se pomoci zabbix-beckup
+  if [[ "$database" =~ "zabbix" ]]
+  then
+    continue
+  fi
+  
+  # bezne zalohovani bez vynechavani - vcetne pripadne databaze zabbixu
+  ${postgresqlCommandPrefix}pg_dump -U"$postgresqlUser" "$postgresqlParams" \
+		-w --dbname="$database" --format=directory --file="$backupPath/$todayTime"
+  RvLog "Vytvoren postgresql-dump databaze ($backupPath/$todayTime)"
+  
+  # nacte navratovou hodnotu - funkce RvLog ji vraci
+  rv="$?"
+  
+  # pokud byl dump uspesny - prohleda slozky pro prislusnou databazi a vymaze stare zalohy
+	#kontroluje, zda pocet zaloh neni mensi nez backuplimit - pokud prestane zalohovat, tak nesmi mazat stare
+	if [ "$(find "$backupPath" -maxdepth 1 -mindepth 1 -type d | wc -l)" -gt "$backupLimit" ]
 	then
-		continue
-	fi
-
-
-	# bezne zalohovani bez vynechavani - vcetne pripadne databaze zabbixu
-	pg_dump -U"$postgresqlUser" "$postgresqlParams" -w --dbname="$database" --format=directory --file="$backupPath/$todayTime"
-	RvLog "Vytvoren postgresql-dump databaze ($backupPath/$todayTime)"
-
-	# nacte navratovou hodnotu - funkce RvLog ji vraci
-	rv="$?"
-
-	# pokud byl dump uspesny - prohleda slozky pro prislusnou databazi a vymaze stare zalohy
-	if [ "$rv" -eq 0 ] && cd "$backupDir/$database"
-	then
-		#odstraneni zaloh starsich nez $backupLimit
-		find "$backupDir/$database" -maxdepth 1 -mindepth 1 -type d -mtime +"$backupLimit" -exec rm -rf {} \;
-		RvLog "odstraneni starych zaloh z ($backupDir/$database)"
-		cd - > /dev/null
-	fi
+    #odstraneni zaloh starsich nez $backupLimit
+    find "$backupDir/$database" -maxdepth 1 -mindepth 1 -type d -mtime +"$backupLimit" \
+			-exec rm -rf {} \;
+    RvLog "odstraneni starych zaloh z ($backupDir/$database)"
+  fi
 done
 
 unset PGPASSWORD

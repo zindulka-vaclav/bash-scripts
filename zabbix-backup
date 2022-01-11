@@ -56,9 +56,9 @@ deBug=0
 
 #nacteni definice funkci Log,LogError,RvLog,MailSend z knihovny
 . $scriptDir/funkce	
-Log "script ($scriptName) - zacatek"
+LogInfo "script ($scriptName) - zacatek"
 echo "$$" > "$startFile"
-Log "($startFile) set to ($$)"
+LogInfo "($startFile) set to ($$)"
 
 
 #_KONFIGURACE
@@ -127,7 +127,7 @@ fi
 if [ -f "$configFile" ]
 then
 	. "$configFile"
-	Log "nacten konfiguracni soubor ($configFile)"
+	LogInfo "nacten konfiguracni soubor ($configFile)"
 else
 	write
 	. "$configFile"
@@ -137,7 +137,7 @@ fi
 #nastavenim disabled na 1 se vypne spousteni scriptu, uprav $configFile, mail se neposila
 if [ "$disabled" -eq 1 ]
 then
-	Log "script ($scriptName) byl disablovan v konfiguracnim souboru ($configFile)"
+	LogInfo "script ($scriptName) byl disablovan v konfiguracnim souboru ($configFile)"
 	MailSend
 	exit 1
 fi
@@ -152,7 +152,7 @@ then
 fi
 
 
-Log "zacatek zalohovani"
+LogInfo "zacatek zalohovani"
 
 
 #_ZALOHA
@@ -166,7 +166,7 @@ RvLog "Vytvoren pg_dump databaze s nazvem ($backupName)"
 #kontrola navratove hodnoty cd
 if [ "$?" -eq 0 -a -d "$backupName" ]
 then
-	Log "Uspesne dokoncena zaloha databaze"
+	LogInfo "Uspesne dokoncena zaloha databaze"
 fi
 
 #kontrola dostatecneho mnozstvi zaloh
@@ -179,24 +179,24 @@ else
 	LogError "POZOR - nedostatecny pocet zaloh zabbixu"
 fi
 
-Log "Zalohu lze obnovit pomoci:"
-Log "systemctl stop zabbix-server apache2"
-Log "psql -U postgres"
-Log "drop database zabbix;"
-Log "create database zabbix with owner=zabbix;"
-Log "\\c zabbix"
-Log "ALTER SCHEMA public OWNER TO zabbix;"
-Log "CREATE SCHEMA partitions;"
-Log "ALTER SCHEMA partitions OWNER TO zabbix;"
-Log "quit;"
-Log ""
-Log "obnova schematu a historie zvlast (pro rychlejsi zprovozneni):"
-Log "pg_restore -Uzabbix --clean --if-exists --dbname=zabbix --exit-on-error --format=directory --jobs=8 --schema=public --exclude-schema=partitions /var/backup/zabbix/$backupDate - obnova zakladniho schematu"
-Log "pg_restore -Uzabbix --clean --if-exists --dbname=zabbix --exit-on-error --format=directory --jobs=8 --schema=partitions --exclude-schema=public /var/backup/zabbix/$backupDate - obnova historie"
-Log "obnova vseho najednou - (delsi zprovozneni, mene prace):"
-Log "pg_restore -Uzabbix --clean --if-exists --dbname=zabbix --exit-on-error --format=directory --jobs=8 /var/backup/zabbix/$backupDate - obnova vseho najednou"
-Log "systemctl start zabbix-server apache2"
+LogInfo "Zalohu lze obnovit pomoci:"
+LogInfo "systemctl stop zabbix-server apache2"
+LogInfo "psql -U postgres"
+LogInfo "drop database zabbix;"
+LogInfo "create database zabbix with owner=zabbix;"
+LogInfo "\\c zabbix"
+LogInfo "ALTER SCHEMA public OWNER TO zabbix;"
+LogInfo "CREATE SCHEMA partitions;"
+LogInfo "ALTER SCHEMA partitions OWNER TO zabbix;"
+LogInfo "quit;"
+LogInfo ""
+LogInfo "obnova schematu a historie zvlast (pro rychlejsi zprovozneni):"
+LogInfo "pg_restore -Uzabbix --clean --if-exists --dbname=zabbix --exit-on-error --format=directory --jobs=8 --schema=public --exclude-schema=partitions /var/backup/zabbix/$backupDate - obnova zakladniho schematu"
+LogInfo "pg_restore -Uzabbix --clean --if-exists --dbname=zabbix --exit-on-error --format=directory --jobs=8 --schema=partitions --exclude-schema=public /var/backup/zabbix/$backupDate - obnova historie"
+LogInfo "obnova vseho najednou - (delsi zprovozneni, mene prace):"
+LogInfo "pg_restore -Uzabbix --clean --if-exists --dbname=zabbix --exit-on-error --format=directory --jobs=8 /var/backup/zabbix/$backupDate - obnova vseho najednou"
+LogInfo "systemctl start zabbix-server apache2"
 
 MailSend
-Log "OK - zalohovani dokonceno"
+LogInfo "OK - zalohovani dokonceno"
 exit 0

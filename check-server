@@ -42,14 +42,14 @@ deBug=0
 
 #_LOGOVANI
 
-#nacteni definice funkci Log,LogError,RvCheck,MailSend z knihovny
+#nacteni definice funkci LogInfo,LogError,RvCheck,MailSend z knihovny
 . $scriptDir/funkce 
 
 
 #_PODMINKY
-Log "zacatek scriptu"
+LogInfo "zacatek scriptu"
 echo "$$" > "$startFile"
-Log "($startFile) set to ($$)"
+LogInfo "($startFile) set to ($$)"
 
 
 #_KONFIGURACE
@@ -59,12 +59,12 @@ if [ -f "$configFile" ]
 then
 	#nacteni obsahu configfile
 	. "$configFile"
-	Log "nacten konfiguracni soubor ($configFile)"
+	LogInfo "nacten konfiguracni soubor ($configFile)"
 else
 	{
 	echo "disabled=0	#slouzi pro globalni, hromadne zruseni spousteni vsech scriptu ze slozky $scriptDir"
 	} > $configFile
-	Log "zapsan konfiguracni soubor pro server ($HOSTNAME)"
+	LogInfo "zapsan konfiguracni soubor pro server ($HOSTNAME)"
 	. "$configFile"
 fi
 
@@ -72,7 +72,7 @@ fi
 #nastavenim disabled na 1 se vypne spousteni scriptu, uprav $configFile, mail se neposila
 if [ "$disabled" -eq 1 ]
 then
-	Log "script byl disablovan v konfiguracnim souboru ($configFile)"
+	LogInfo "script byl disablovan v konfiguracnim souboru ($configFile)"
 	exit 0
 fi
 
@@ -104,10 +104,10 @@ do
 		ln -sf "$scriptPath" "$sbinDir"/"$script"
 		LogError "vytvoren symlink pro [$script]"
 	else
-		Log "symlink pro [$script] je v poradku"
+		LogInfo "symlink pro [$script] je v poradku"
 	fi
 done
-Log "Dokoncena kontrola scriptu v "$sbinDir""
+LogInfo "Dokoncena kontrola scriptu v "$sbinDir""
 
 
 #pokud je errorFile, posle mailem $logFile, jinak udela touch na stopFile

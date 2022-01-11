@@ -59,7 +59,7 @@ fi
 CheckDir "$pidDir"
 CheckDir "$logDir"
 
-Log "Zacatek scriptu"
+LogInfo "Zacatek scriptu"
 
 echo "$$" > "$startFile"
 RvLog "start file set to ($$)"
@@ -67,14 +67,14 @@ RvLog "start file set to ($$)"
 #spousti se pouze pod rootem
 if [ "$UID" -eq 0 ]
 then
-	Log "kontrolni cast scriptu"
+	LogInfo "kontrolni cast scriptu"
 	CheckDir "$configDir"
 	CheckDir "$pidDir"
 	CheckDir "$pipeDir"
 	CheckDir "$scriptDir"
 	CheckDir "$scripty"
 
-	Log "nalinkovani scriptu do $sbinDir"
+	LogInfo "nalinkovani scriptu do $sbinDir"
 
     #nalinkuje vsechny scripty ve slozce $scriptDir do slozky $sbinDir
 	for script in $(find "$scriptDir" -maxdepth 1 -mindepth 1 -type f | grep -v "funkce" )
@@ -83,7 +83,7 @@ then
 		RvLog "vytvoren symlink ($script)"
 	done
 
-	Log "konfigurace cronu a logrotate"
+	LogInfo "konfigurace cronu a logrotate"
 	# nalinkovani logrotate pro scripty
 	ln -sf "$scriptDir"/etc/logrotate.d/scripty /etc/logrotate.d/scripty	
 	RvLog "ln -sf $scriptDir/etc/logrotate.d/scripty /etc/logrotate.d/scripty"

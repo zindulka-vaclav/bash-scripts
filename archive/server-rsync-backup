@@ -35,9 +35,9 @@ deBug=0
 
 #nacteni definice funkci Log,LogError,RvLog,MailSend z knihovny
 . $scriptDir/funkce	
-Log "script ($scriptName) - zacatek"
+LogInfo "script ($scriptName) - zacatek"
 echo "$$" > "$startFile"
-Log "($startFile) set to ($$)"
+LogInfo "($startFile) set to ($$)"
 
 
 #soubor s heslem, je potreba pouze pokud je nastaveno i uzivatelske jmeno
@@ -77,7 +77,7 @@ write(){
 
 		RvLog "{write} - zapsany soubory do souboru s vyjimkami [$excludeFile]"
 	else
-		Log "{write} - soubor s vyjimkami uz existuje, nechavam ho byt"
+		LogInfo "{write} - soubor s vyjimkami uz existuje, nechavam ho byt"
 	fi
 
 	echo "#disabled=1 - script se nepousti
@@ -112,7 +112,7 @@ then
 	fi
 
 	. "$configFile"
-	Log "nacten konfiguracni soubor ($configFile)"
+	LogInfo "nacten konfiguracni soubor ($configFile)"
 #pokud konfiguracni soubor neexistuje, tak zapise novy
 else
 	write
@@ -127,13 +127,13 @@ then
 	rm /etc/cron.daily/"$scriptName"
 	LogError "provedeno odstraneni automatickeho spousteni z cronu"
 else
-	Log "server se uz automaticky nespoust z cron.daily"
+	LogInfo "server se uz automaticky nespoust z cron.daily"
 fi
 
 #pri prvotnim spusteni je script defaultne disablovany
 if [ "$disabled" -eq 1 ]
 then
-	Log "script ($scriptName) je disablovany v ($configFile)"
+	LogInfo "script ($scriptName) je disablovany v ($configFile)"
 	MailSend
 	exit 0
 fi
@@ -146,25 +146,25 @@ then
 	MailSend
 	exit 3
 else
-	Log "zaloha se provede na [$rsyncTarget]"
+	LogInfo "zaloha se provede na [$rsyncTarget]"
 fi
 
 
-Log "Zacatek zalohovani"
+LogInfo "Zacatek zalohovani"
 
 
 #pokud je nastavena promena s uzivatelem, pak se bude vuci serveru autentifikovat
 #verbose vystup zalohovanych souboru je v /var/log/server-rsync-backup.log
 if [ -n "$rsyncUser" ] && [ -f "$passwordFile" ]
 then
-	Log "rsync s overenim uzivatele -> [$rsyncTarget]"
+	LogInfo "rsync s overenim uzivatele -> [$rsyncTarget]"
 	rsync -av --delete --exclude-from="$excludeFile" --password-file="$passwordFile" / "$rsyncUser"@"$rsyncTarget" > "$logDir/${scriptName}.log"
 	RvLog "dokoncen rsync -> [$rsyncUser@$rsyncTarget]"
 	rv="$?"
 #pokud je promenna s uzivatelem prazdna, pak se nebude autentifikovat
 elif [ -z "$rsyncUser" ]
 then
-	Log "rsync bez overeni uzivatele -> [$rsyncTarget]"
+	LogInfo "rsync bez overeni uzivatele -> [$rsyncTarget]"
 	rsync -av --delete --exclude-from="$excludeFile" / "$rsyncTarget" > "$logDir/${scriptName}.log"
 	RvLog "dokoncen rsync -> [$rsyncTarget]"
 	rv="$?"
@@ -189,10 +189,10 @@ case "$rv" in
 		LogError "rsync byl ustrelen SIGHUP, nebo neco podobneho"
 		;;
 	0)
-		Log "navratova hodnota je 0, tedy zalohovani probehlo bez potizi"
+		LogInfo "navratova hodnota je 0, tedy zalohovani probehlo bez potizi"
 		;;
 esac
 
 MailSend
-Log "OK - ($scriptName) zalohovani dokonceno"
+LogInfo "OK - ($scriptName) zalohovani dokonceno"
 exit 0

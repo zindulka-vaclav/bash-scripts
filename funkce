@@ -55,50 +55,54 @@ pidFile="$pidDir/${scriptName}.pid"
 #soubor obsahujici pid defaultniho logovaciho loopu
 defaultPid="$pidDir/default.pid"
 
-#slozka kde se vytvareji named pipe
-pipeDir="$pidDir/pipe"	
-
-#named pipe pro logovani erroru
-pipeFile="$pipeDir/$scriptName"	
-
-#named pipe pro logovani beznych vystupu
-defaultPipe="$pipeDir/default"
-
-
 #pokud od minule zustal soubor $errorFile, tak ho odstrani
 if [ -e "$errorFile" ]
 then
 	rm "$errorFile"
 fi
 
+# Define_functions
+# _LogDebug
+# usage: LogDebug "message"
+# gray debug log output - only if enabled by -d
+LogDebug() {
+	if [ "$DEBUG_OUTPUT" = "true" ]
+	then
+		echo "$(date '+%b %d %T') $HOSTNAME $scriptName:(Debug)[$$]: $1" >> "$logFile"
 
-#_Log
-Log(){
-	#provede zapis predaneho parametru do logu (/var/log/scripty), pri verbose to hrne i na screen
+		if [ "$verbose" -eq 1 ]
+		then
+			echo -e "\e[1;90m $(date '+%b %d %T') $SCRIPT_NAME (Debug): $1 \e[0m"
+		fi
+	fi
+} 
+
+# _LogInfo
+# usage: LogInfo "message"
+# green info log output
+LogInfo() {
+	echo "$(date '+%b %d %T') $HOSTNAME $scriptName:(Info)[$$]: $1" >> "$logFile"
+
 	if [ "$verbose" -eq 1 ]
 	then
-#		logger -s -p local0.info -t "$scriptName - OK" "$1"
-		echo "$(date '+%b %d %T') $HOSTNAME $scriptName: LOG - $1" | tee -a "$logFile"
-	else
-#		logger -p local0.info -t "$scriptName - OK" "$1"
-		echo "$(date '+%b %d %T') $HOSTNAME $scriptName: LOG - $1" >> "$logFile"
+		echo -e "\e[1;92m $(date '+%b %d %T') $SCRIPT_NAME (Info): $1 \e[0m"
 	fi
-}
+} 
 
+# _LogWarning
+# usage: LogWarning "message"
+# yellow warning log output
+LogWarning() {
+	echo "$(date '+%b %d %T') $HOSTNAME $scriptName:(Warning)[$$]: $1" >> "$logFile"
+	echo -e "\e[1;33m $(date '+%b %d %T') $SCRIPT_NAME (Warning): $1 \e[0m"
+} 
 
-#_LogError
-LogError(){
-	#provede ERROR zapis predaneho parametru do logu s nazvnem scriptu v (/var/log/scripty)
-	echo "$(date '+%b %d %T') $HOSTNAME $scriptName: ERROR - $1" | tee -a "$logFile"
-	touch "$errorFile"
-}
-
-
-#_LOGERROR
-LogErrorVerbose(){
-	#provede ERROR zapis predaneho parametru do logu s nazvnem scriptu v (/var/log/scripty)
+# _LogError
+# usage: LogError "message"
+# red error log output
+LogError() {
 	echo "$(date '+%b %d %T') $HOSTNAME $scriptName:(Error)[$$]: $1" >> "$logFile"
-	echo  -e "\e[1;91m $(date '+%b %d %T') $HOSTNAME $scriptName:(Error)[$$]: $1 \e[0m"
+	echo  -e "\e[1;91m $(date '+%b %d %T') $SCRIPT_NAME (Error): $1 \e[0m"
 	touch "$errorFile"
 } 
 
@@ -108,13 +112,12 @@ RvLog(){
 	rv="$?"
 	if [ "$rv" -eq 0 ]
 	then
-		Log "[$1] rv=[$rv]"
+		LogInfo "[$1] rv=[$rv]"
 	else
 		LogError "[PROBLEM: $1] rv=[$rv]"
 	fi
 	return "$rv"
 }
-
 
 #_MailSend
 MailSend(){
@@ -150,7 +153,6 @@ MailSend(){
 		return 0
 	fi
 }
-
 
 #_CheckDir
 #zkontroluje zda existuje slozka predana jako parametr, pokud ne, tak ji vytvori
@@ -229,7 +231,7 @@ TestRunFile()
 		fi
 
 		touch "$runFile"
-		Log "START - OK - zaznamenan zacatek scriptu ($scriptName) - ($runFile)"
+		LogInfo "START - OK - zaznamenan zacatek scriptu ($scriptName) - ($runFile)"
 	fi
 }
 
