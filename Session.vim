@@ -289,12 +289,12 @@ set winwidth=1
 exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
 exe 'vert 2resize ' . ((&columns * 119 + 119) / 239)
 argglobal
-let s:l = 3 - ((2 * winheight(0) + 28) / 57)
+let s:l = 113 - ((56 * winheight(0) + 28) / 57)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-3
-normal! 089|
+113
+normal! 03|
 wincmd w
 argglobal
 if bufexists("Changelog") | buffer Changelog | else | edit Changelog | endif
@@ -499,12 +499,12 @@ set winwidth=1
 exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
 exe 'vert 2resize ' . ((&columns * 119 + 119) / 239)
 argglobal
-let s:l = 194 - ((55 * winheight(0) + 28) / 57)
+let s:l = 90 - ((53 * winheight(0) + 28) / 57)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-194
-normal! 064|
+90
+normal! 03|
 wincmd w
 argglobal
 if bufexists("Changelog") | buffer Changelog | else | edit Changelog | endif
@@ -552,7 +552,7 @@ normal! 047|
 wincmd w
 exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
 exe 'vert 2resize ' . ((&columns * 119 + 119) / 239)
-tabnext 14
+tabnext 8
 set stal=1
 badd +1 backup
 badd +1 check-server
@@ -568,7 +568,7 @@ badd +1 server-backup
 badd +1 server-rsync-backup
 badd +1 zabbix-backup
 badd +1 zabbix-sync
-badd +61 Changelog
+badd +1 Changelog
 badd +1 postgresql-backup
 if exists('s:wipebuf') && len(win_findbuf(s:wipebuf)) == 0
   silent exe 'bwipe ' . s:wipebuf

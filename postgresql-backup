@@ -4,7 +4,7 @@
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=3
+VERSION_PATCH=4
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 #LIST
@@ -38,6 +38,9 @@ backupDir="/var/backup/postgresql"
 backupLimit=14
 todayDate="$(date +%F)"
 todayTime="$(date +%H-%M)"
+
+# variable to pass postgres variables if set in config file
+postgresqlParams=""
 
 scriptDir="/usr/local/bash-scripts"
 verbose=0
@@ -73,10 +76,13 @@ write(){
 	echo "postgresqlUser=\"postgres\""
 	echo "#heslo uzivatele pro postgresql"
 	echo "postgresqlPassword=\"\""
+	echo "# port pro pripojeni k databazi - 5432"
+	echo "postgresqlPort=\"\""
+	echo "# hostname / IP pro pripojeni k databazi - localhost | 192.168.1.2"
+	echo "postgresqlHost=\"\""
 	} > "$configFile"
 	LogError "zapsan konfiguracni soubor pro server ($HOSTNAME)"
 }
-
 
 #_POSTGRESQL_BACKUP_CRON
 #pokud neni zaznam pro postgresql-backup
@@ -90,17 +96,15 @@ then
 	RvLog "zapsano spousteni postgresql-backup scriptu do cronu"
 fi
 
-
 #nacte konfiguracni soubor
 if [ -f "$configFile" ]
 then
-	. "$configFile"
+	source "$configFile"
 	Log "nacten konfiguracni soubor ($configFile)"
 else
 	write
 	. "$configFile"
 fi
-
 
 #nastavenim disabled na 1 se vypne spousteni scriptu, uprav $configFile, mail se neposila
 if [ "$disabled" -eq 1 ]
@@ -109,7 +113,6 @@ then
 	MailSend
 	exit 1
 fi
-
 
 #kontrola nastaveni promennych 
 if [ -z "$backupLimit" ] || [ -z "$postgresqlUser" ] || [ -z "$backupDir" ]
@@ -122,16 +125,28 @@ else
 	export PGPASSWORD="$postgresqlPassword"
 fi
 
+# if port is set in configuration, pass it to variable
+if [ -n "$postgresqlPort" ]
+then
+	Log "Postgresql port set to $postgresqlPort"
+	postgresqlParams="$postgresqlParams -p $postgresqlPort"
+fi
+
+# if host is set in configuration, pass it to variable
+if [ -n "$postgresqlHost" ]
+then
+	Log "Postgresql host set to $postgresqlHost"
+	postgresqlParams="$postgresqlParams -h $postgresqlHost"
+fi
 
 #_ZALOHA
 #vycteni databazi z postgresql do pole
 #-w se nepta na heslo, ale musi byt nastavena promenna PGPASSWORD
 #-At vynecha kudrlinky
 #-c prikaz predany postgresql
-backupARRAY=($(psql -U"$postgresqlUser" -w -At\
+backupARRAY=($(psql -U"$postgresqlUser" "$postgresqlParams" -w -At \
 	-c "select datname from pg_database where not datistemplate and datallowconn order by datname;"))
 RvLog "nastaveno pole backupARRAY (${backupARRAY[@]})"
-
 
 #provede dumpy vsech existujicich databazi
 for database in ${backupARRAY[@]}
@@ -147,7 +162,7 @@ do
 
 
 	# bezne zalohovani bez vynechavani - vcetne pripadne databaze zabbixu
-	pg_dump -U"$postgresqlUser" -w --dbname="$database" --format=directory --file="$backupPath/$todayTime"
+	pg_dump -U"$postgresqlUser" "$postgresqlParams" -w --dbname="$database" --format=directory --file="$backupPath/$todayTime"
 	RvLog "Vytvoren postgresql-dump databaze ($backupPath/$todayTime)"
 
 	# nacte navratovou hodnotu - funkce RvLog ji vraci
