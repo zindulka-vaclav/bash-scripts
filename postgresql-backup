@@ -19,10 +19,11 @@ VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 # _Usage
 # _write_config
 # Process_parameters
-#_PODMINKY
-#_KONFIGURACE
-#_POSTGRESQL_BACKUP_CRON
-#_ZALOHA
+# write_cron_file
+# load_config_file
+# process_variables
+# Load_database_names
+# dump_all_databases
 
 # Declare_variables
 scriptName="postgresql-backup"
@@ -127,21 +128,21 @@ write_config(){
     echo "configVersion=\"$configVersion\""
     echo "# enable (true) / disable (false) execution of the script"
     echo "enabled=$enabled"
-    echo "#nastavuje, kolik zaloh zpetne se bude drzet"
+    echo "# how many backups to keep"
     echo "backupLimit=$backupLimit"
     echo "# prefix for commands - keep space at the end of command"
-    echo "sudo -u postgres | docker exec DOCKER_CONTAINER "
+    echo "# sudo -u postgres | docker exec DOCKER_CONTAINER "
     echo "postgresqlUser=\"$postgresqlUser\""
-    echo "#uzivatel, pod kterym se budou provadet dumpy... v pripade vice databazi musi byt postgres"
+    echo "# user to process backup - idealy superuser - postgres or any other"
     echo "postgresqlUser=\"$postgresqlUser\""
-    echo "#heslo uzivatele pro postgresql"
+    echo "# password to access postgresql - can be omited using sudo -u postgres prefix of .pgpass file"
     echo "postgresqlPassword=\"$postgresqlPassword\""
-    echo "# port pro pripojeni k databazi - 5432"
+    echo "# port for database connection - default is 5432"
     echo "postgresqlPort=\"$postgresqlPort\""
-    echo "# hostname / IP pro pripojeni k databazi - localhost | 192.168.1.2"
+    echo "# hostname / IP for database connection - default is empty - localhost | 192.168.1.2"
     echo "postgresqlHost=\"$postgresqlHost\""
   } > "$configFile"
-  LogError "zapsan konfiguracni soubor pro server ($HOSTNAME)"
+  LogError "Config file $configFile written on ($HOSTNAME)"
 }
 # _write_config
 # Define_functions
@@ -198,30 +199,31 @@ do
   
   shift
 done
-
 # Process_parameters
-#_POSTGRESQL_BACKUP_CRON
-# create new cron file
+
+# write_cron_file
 if [ ! -e "$cronFile" ]
 then
   # create new cron file
   {
     echo "# execute postgresql-backup daily - default instance"
-    echo "0 1 * * * root $sbinDir/postgresql-backup &>$outputFile"
+    echo "0 1 * * * root $sbinDir/$scriptName &>$outputFile"
   } > "$cronFile"
-  RvLog "zapsano spousteni postgresql-backup scriptu do cronu"
+  RvLog "Created new cron file $cronFile for $scriptName"
 else
   # for non-default instance - create new line in cron file if not present
   if  [ -n "$instanceName" ] && [ $(grep -ec "$scriptName.*$instanceName") -eq 0 ]
   then
     # add line for this instance
     {
-      echo "0 2 * * * root $sbinDir/postgresql-backup -i $configFile &>$outputFile"
+      echo "0 2 * * * root $sbinDir/$scriptName -i $configFile &>$outputFile"
     } >> "$cronFile"
-    RvLog "zapsano spousteni postgresql-backup scriptu do cronu"
+    RvLog "Added instance $instanceName to cron file $cronFile for $scriptName"
   fi
 fi
+# write_cron_file
 
+# load_config_file
 # load variables from config file
 if [ -f "$configFile" ]
 then
@@ -240,15 +242,17 @@ else
   write_config
   source "$configFile"
 fi
+# load_config_file
 
 # check config - stop on disabled execution
 if [ "$enabled" = "false" ]
 then
-  LogInfo "script ($scriptName) byl disablovan v konfiguracnim souboru ($configFile)"
+  LogInfo "Script ($scriptName) is disabled in config file ($configFile)"
   MailSend
   exit 1
 fi
 
+# process_variables
 #kontrola nastaveni promennych
 if [ -z "$backupLimit" ] || [ -z "$postgresqlUser" ] || [ -z "$backupDir" ]
 then
@@ -274,6 +278,7 @@ then
   LogInfo "Postgresql host set to $postgresqlHost"
   postgresqlParams="$postgresqlParams -h $postgresqlHost"
 fi
+# process_variables
 
 # Load_database_names
 #vycteni databazi z postgresql do pole
@@ -283,7 +288,9 @@ fi
 backupARRAY=($(${postgresqlCommandPrefix}psql -U"$postgresqlUser" "$postgresqlParams" -w -At \
   -c "select datname from pg_database where not datistemplate and datallowconn order by datname;"))
 RvLog "backupARRAY (${backupARRAY[@]}) loaded from postgresql"
+# Load_database_names
 
+# dump_all_databases
 #provede dumpy vsech existujicich databazi
 for database in ${backupARRAY[@]}
 do
@@ -311,6 +318,7 @@ do
     RvLog "Old backups removed from ($backupDir/$database)"
   fi
 done
+# dump_all_databases
 
 unset PGPASSWORD
 
