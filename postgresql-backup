@@ -105,7 +105,7 @@ write_config(){
 
   # default values for variables - updated in case of existing file
   configVersion="$scriptConfigVersion"
-  enabled="true"
+  enabled="false"
   postgresqlCommandPrefix=""
   postgresqlUser="postgres"
   postgresqlPassword=""
@@ -127,7 +127,7 @@ write_config(){
     echo "# config version - checked by the script - for automatic config update"
     echo "configVersion=\"$configVersion\""
     echo "# enable (true) / disable (false) execution of the script"
-    echo "enabled=$enabled"
+    echo "enabled=\"$enabled\""
     echo "# how many backups to keep"
     echo "backupLimit=$backupLimit"
     echo "# prefix for commands - keep space at the end of command"
@@ -138,7 +138,7 @@ write_config(){
     echo "# password to access postgresql - can be omited using sudo -u postgres prefix of .pgpass file"
     echo "postgresqlPassword=\"$postgresqlPassword\""
     echo "# port for database connection - default is 5432"
-    echo "postgresqlPort=\"$postgresqlPort\""
+    echo "postgresqlPort=$postgresqlPort"
     echo "# hostname / IP for database connection - default is empty - localhost | 192.168.1.2"
     echo "postgresqlHost=\"$postgresqlHost\""
   } > "$configFile"
