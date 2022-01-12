@@ -212,7 +212,8 @@ then
   RvLog "Created new cron file $cronFile for $scriptName"
 else
   # for non-default instance - create new line in cron file if not present
-  if  [ -n "$instanceName" ] && [ $(grep -ec "$scriptName.*$instanceName") -eq 0 ]
+  if  [ -n "$instanceName" ] &&\
+      [ $(grep -ec "$scriptName.*$instanceName" $cronFile) -eq 0 ]
   then
     # add line for this instance
     {
