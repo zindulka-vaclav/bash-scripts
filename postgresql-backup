@@ -281,12 +281,22 @@ then
 fi
 # process_variables
 
+# for sudo -u postgres change group of backupDir
+if [[ "$postgresqlCommandPrefix" =~ "sudo -u " ]]
+then
+  user=${postgresqlCommandPrefix#sudo -u}
+  user=${user# }
+  chown -R "$user:$user" "$backupDir"
+  find "$backupDir" -type d -exec chmod g+s {} \;
+  Log "Changing group ownership of $backupDir structure"
+fi
+
 # Load_database_names
 #vycteni databazi z postgresql do pole
 #-w don't ask for password, PGPASSWORD must be set or $HOME/.pgpass file present
 #-At disable visual improvements of query result
 #-c command to execute
-backupARRAY=($(${postgresqlCommandPrefix}psql -U"$postgresqlUser" "$postgresqlParams" -w -At \
+backupARRAY=($(${postgresqlCommandPrefix}psql -U"$postgresqlUser" ${postgresqlParams} -w -At \
   -c "select datname from pg_database where not datistemplate and datallowconn order by datname;"))
 RvLog "backupARRAY (${backupARRAY[@]}) loaded from postgresql"
 # Load_database_names
@@ -306,7 +316,7 @@ do
   fi
   
   # bezne zalohovani bez vynechavani - vcetne pripadne databaze zabbixu
-  ${postgresqlCommandPrefix}pg_dump -U"$postgresqlUser" "$postgresqlParams" \
+  ${postgresqlCommandPrefix}pg_dump -U"$postgresqlUser" ${postgresqlParams} \
 		-w --dbname="$database" --format=directory --file="$backupPath/$todayTime"
   RvLog "Created dump of postgresql database ($backupPath/$todayTime)"
   
