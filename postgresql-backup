@@ -284,8 +284,7 @@ fi
 # for sudo -u postgres change group of backupDir
 if [[ "$postgresqlCommandPrefix" =~ "sudo -u " ]]
 then
-  user=${postgresqlCommandPrefix#sudo -u}
-  user=${user# }
+  user=$(echo "$postgresqlCommandPrefix" | sed -e 's/sudo -u\ *\(\w\+\)\ */\1/g')
   chown -R "$user:$user" "$backupDir"
   find "$backupDir" -type d -exec chmod g+s {} \;
   Log "Changing group ownership of $backupDir structure"
