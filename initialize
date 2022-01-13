@@ -70,7 +70,6 @@ then
 	LogInfo "kontrolni cast scriptu"
 	CheckDir "$configDir"
 	CheckDir "$pidDir"
-	CheckDir "$pipeDir"
 	CheckDir "$scriptDir"
 	CheckDir "$scripty"
 
