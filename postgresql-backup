@@ -283,13 +283,6 @@ then
   LogInfo "Postgresql host set to $postgresqlHost"
   postgresqlParams="$postgresqlParams -h $postgresqlHost"
 fi
-
-# if count of cpus is set in configuration, pass it to variable
-if [ -n "$cpuCount" ]
-then
-  LogInfo "Postgresql cpu count for pg_dump is set to $cpuCount"
-  postgresqlParams="$postgresqlParams --jobs=$cpuCount"
-fi
 # process_variables
 
 # for sudo -u postgres change group of backupDir
@@ -310,6 +303,14 @@ backupARRAY=($(${postgresqlCommandPrefix}psql -U"$postgresqlUser" ${postgresqlPa
   -c "select datname from pg_database where not datistemplate and datallowconn order by datname;"))
 RvLog "backupARRAY (${backupARRAY[@]}) loaded from postgresql"
 # Load_database_names
+
+# if count of cpus is set in configuration, pass it to variable
+# it has to be after psql command because it doesn't support --jobs parameter
+if [ -n "$cpuCount" ]
+then
+  LogInfo "Postgresql cpu count for pg_dump is set to $cpuCount"
+  postgresqlParams="$postgresqlParams --jobs=$cpuCount"
+fi
 
 # dump_all_databases
 #provede dumpy vsech existujicich databazi
