@@ -132,7 +132,7 @@ write_config(){
     echo "backupLimit=$backupLimit"
     echo "# prefix for commands - keep space at the end of command"
     echo "# sudo -u postgres | docker exec DOCKER_CONTAINER "
-    echo "postgresqlUser=\"$postgresqlUser\""
+    echo "postgresqlCommandPrefix=\"$postgresqlCommandPrefix\""
     echo "# user to process backup - idealy superuser - postgres or any other"
     echo "postgresqlUser=\"$postgresqlUser\""
     echo "# password to access postgresql - can be omited using sudo -u postgres prefix of .pgpass file"
