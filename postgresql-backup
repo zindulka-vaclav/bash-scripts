@@ -10,7 +10,7 @@ set -- "$@"
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=5
+VERSION_PATCH=6
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # Declare_variables
@@ -40,7 +40,7 @@ todayTime="$(date +%H-%M)"
 # path to config file - multiple instances have multiple config files
 configFile=""
 
-scriptConfigVersion=1.1
+scriptConfigVersion=1.2
 
 cronFile="/etc/cron.d/$scriptName"
 
@@ -111,6 +111,7 @@ write_config(){
   postgresqlPassword=""
   postgresqlPort=""
   postgresqlHost=""
+  cpuCount=1
   
   # if config file exists, create backup and source it to preserve values
   if [ -f "$configFile" ]
@@ -132,6 +133,7 @@ write_config(){
     echo "backupLimit=$backupLimit"
     echo "# prefix for commands - keep space at the end of command"
     echo "# sudo -u postgres | docker exec DOCKER_CONTAINER "
+    echo "# for docker exec you have to map /var/backup in container to local dir "
     echo "postgresqlCommandPrefix=\"$postgresqlCommandPrefix\""
     echo "# user to process backup - idealy superuser - postgres or any other"
     echo "postgresqlUser=\"$postgresqlUser\""
@@ -141,6 +143,8 @@ write_config(){
     echo "postgresqlPort=$postgresqlPort"
     echo "# hostname / IP for database connection - default is empty - localhost | 192.168.1.2"
     echo "postgresqlHost=\"$postgresqlHost\""
+    echo "# number of cpus for pg_dump - default 1"
+    echo "cpuCount=\"$cpuCount\""
   } > "$configFile"
   LogError "Config file $configFile written on ($HOSTNAME)"
 }
@@ -278,6 +282,13 @@ if [ -n "$postgresqlHost" ]
 then
   LogInfo "Postgresql host set to $postgresqlHost"
   postgresqlParams="$postgresqlParams -h $postgresqlHost"
+fi
+
+# if count of cpus is set in configuration, pass it to variable
+if [ -n "$cpuCount" ]
+then
+  LogInfo "Postgresql cpu count for pg_dump is set to $cpuCount"
+  postgresqlParams="$postgresqlParams --jobs=$cpuCount"
 fi
 # process_variables
 
