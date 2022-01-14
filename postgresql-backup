@@ -221,7 +221,7 @@ else
   then
     # add line for this instance
     {
-      echo "0 2 * * * root $sbinDir/$scriptName -i $configFile &>$outputFile"
+      echo "0 2 * * * root $sbinDir/$scriptName -i $instanceName &>$outputFile"
     } >> "$cronFile"
     RvLog "Added instance $instanceName to cron file $cronFile for $scriptName"
   fi
