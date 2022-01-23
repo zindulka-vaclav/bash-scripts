@@ -10,7 +10,7 @@ set -- "$@"
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=6
+VERSION_PATCH=7
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # Declare_variables
@@ -332,7 +332,7 @@ do
   RvLog "Created dump of postgresql database ($backupPath/$todayTime)"
   
   # check number of backups - to prevent deleting old backups in case of problems
-	if [ "$(find "$backupPath" -maxdepth 1 -mindepth 1 -type d | wc -l)" -gt "$backupLimit" ]
+	if [ "$(find "$backupDir/$database" -maxdepth 1 -mindepth 1 -type d | wc -l)" -gt "$backupLimit" ]
 	then
     # remove old backups - keep $backupLimit only
     find "$backupDir/$database" -maxdepth 1 -mindepth 1 -type d -mtime +"$backupLimit" \

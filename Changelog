@@ -21,6 +21,8 @@ masteru
 1.0.0 - vychozi verze scriptu
 
 # postgresql-backup
+1.0.7 - fixed backup rotation
+1.0.6 - added support for multi core pg_dumps
 1.0.5 - changed to instance names, added config version processing
 1.0.4 - added port and host to configuration
 1.0.3 - zmena zalohovani na directory, zruseno separatni zalohovani zabbixu
