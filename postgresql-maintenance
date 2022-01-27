@@ -1,0 +1,302 @@
+#!/bin/bash
+# provadi vacuum analyze na vsech vytvorenych databazich
+
+# set pipes to fail after first error, preserving last return value of failed process
+set -o pipefail
+
+# set all parameters passed during execution of the script as single parameters
+set -- "$@"
+
+VERSION_MAJOR=1
+VERSION_MINOR=0
+VERSION_PATCH=0
+VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
+
+# Declare_variables
+# Load_functions
+# Define_functions
+# _Usage
+# _write_config
+# Process_parameters
+# write_cron_file
+# load_config_file
+# process_variables
+# Load_database_names
+# maintain_all_databases
+
+# Declare_variables
+scriptName="postgresql-maintenance"
+instanceName=""
+
+# path to config file - multiple instances have multiple config files
+configFile=""
+
+scriptConfigVersion=1.0
+
+cronFile="/etc/cron.d/$scriptName"
+
+# variable to pass postgres variables if set in config file
+postgresqlParams=""
+
+verbose=0
+# Declare_variables
+
+# Load_functions
+# load definition of functions LogInfo, LogWarning, LogError,
+# RvLog, MailSend z knihovny
+source $scriptDir/funkce
+LogDebug "Sourced common script funkce"
+LogInfo "script ($scriptName) - start"
+echo "$$" > "$startFile"
+LogInfo "($startFile) set to ($$)"
+# Load_functions
+
+# Define_functions
+# _Usage
+# print usage of script
+Usage() {
+  echo -e "Script for PostgreSQL maintenance.
+Allows to run in multiple instances with different names using -i parameter
+to support maintenance of dockerized databases, multiple instances of cluster.
+
+Allows different setups of accessing the database.
+  - sudo -u postgres psql
+	- docker exec DOCKER_CONTAINER psql
+  - psql using \$HOME/.pgpass file
+	- psql using password set in config file
+
+To be able to access postgresql database using pgpass
+create /root/.pgpass inside postgres container
+Set its privileges to 600 and its content to:
+# hostname:port:database:username:password
+*:POSTGRES_PORT:*:POSTGRES_USERNAME:POSTGRES_PASSWORD
+
+In case of Docker image create .pgpass file in \$HOME of user running psql command
+postgres, root.
+
+Usage:
+  $SCRIPT_NAME  [OPTIONS] [PARAMETERS]
+
+Supported parameters:
+  -h | --help       Print usage informations
+  -V | --version    Print version of the script
+  -i INSTANCE_NAME  Set name to run multiple instances - eshop_cz | eshop_sk etc
+
+Supported options:
+  -x               Bash debug output of the script - can be used with any other parameter
+  -d               Script debug output of logs - can be used with any other parameter
+  -v               Script verbose output of logs - can be used with any other option"
+}
+# _Usage
+
+# _write_config
+# write new config file / update from old one
+write_config(){
+
+  # default values for variables - updated in case of existing file
+  configVersion="$scriptConfigVersion"
+  enabled="false"
+  postgresqlCommandPrefix=""
+  postgresqlUser="postgres"
+  postgresqlPassword=""
+  postgresqlPort=""
+  postgresqlHost=""
+  
+  # if config file exists, create backup and source it to preserve values
+  if [ -f "$configFile" ]
+  then
+    cp "$configFile" "${configFile}.back"
+    RvLog "Created backup of old config file (${configFile}.back)"
+    source "${configFile}.back"
+
+    # replace config version with script version to update config file
+    configVersion="$scriptConfigVersion"
+  fi
+  
+  {
+    echo "# config version - checked by the script - for automatic config update"
+    echo "configVersion=\"$configVersion\""
+    echo "# enable (true) / disable (false) execution of the script"
+    echo "enabled=\"$enabled\""
+    echo "# prefix for commands - keep space at the end of command"
+    echo "# sudo -u postgres | docker exec DOCKER_CONTAINER "
+    echo "# for docker exec you have to map /var/backup in container to local dir "
+    echo "postgresqlCommandPrefix=\"$postgresqlCommandPrefix\""
+    echo "# user to process backup - idealy superuser - postgres or any other"
+    echo "postgresqlUser=\"$postgresqlUser\""
+    echo "# password to access postgresql - can be omited using sudo -u postgres prefix of .pgpass file"
+    echo "postgresqlPassword=\"$postgresqlPassword\""
+    echo "# port for database connection - default is 5432"
+    echo "postgresqlPort=$postgresqlPort"
+    echo "# hostname / IP for database connection - default is empty - localhost | 192.168.1.2"
+    echo "postgresqlHost=\"$postgresqlHost\""
+  } > "$configFile"
+  LogError "Config file $configFile written on ($HOSTNAME)"
+}
+# _write_config
+# Define_functions
+
+# Process_parameters
+while [ "$#" -gt 0 ]
+do
+  # PARAMETERS
+  # print version and exit
+  if [ "$1" = "-V" ] || [ "$1" = "--version" ]
+  then
+    echo "$VERSION"
+    exit 0
+    # print help and exit
+  elif [ "$1" = "-h" ] || [ "$1" = "--help" ]
+  then
+    Usage
+    exit 0
+    # instance name
+  elif [ "$1" = "-i" ]
+  then
+    # load config file parameter
+    shift
+
+    # replace blanks with underscores in instance name
+    instanceName="${1// /_}"
+
+    # overwrite config file
+    configFile="$configDir/$scriptName-$instanceName.conf"
+
+    LogWarning "Processing instance $instanceName"
+    LogWarning "Defined alternative config file $configFile"
+  # OPTIONS
+  elif [ "$1" = "-x" ]
+  then
+    LogWarning "Detected parameter $1 for bash debug output of the script"
+    set -x
+  elif [ "$1" = "-d" ]
+  then
+    LogWarning "Detected parameter $1 for debug output of log messages"
+    DEBUG_OUTPUT="true"
+  elif [ "$1" = "-v" ]
+  then
+    LogWarning "Detected parameter $1 for verbose output of log messages"
+    verbose=1
+  else
+    LogError "Unknown parameter detected: $1"
+    Usage
+    exit 1
+  fi
+  
+  shift
+done
+# Process_parameters
+
+# write_cron_file
+if [ ! -e "$cronFile" ]
+then
+  # create new cron file
+  {
+    echo "# execute $scriptName daily - default instance"
+    echo "0 22 * * * root $sbinDir/$scriptName &>$outputFile"
+  } > "$cronFile"
+  RvLog "Created new cron file $cronFile for $scriptName"
+else
+  # for non-default instance - create new line in cron file if not present
+  if  [ -n "$instanceName" ] &&\
+      [ $(grep -Ec "$scriptName.*$instanceName" "$cronFile") -eq 0 ]
+  then
+    # add line for this instance
+    {
+      echo "0 23 * * * root $sbinDir/$scriptName -i $instanceName &>$outputFile"
+    } >> "$cronFile"
+    RvLog "Added instance $instanceName to cron file $cronFile for $scriptName"
+  fi
+fi
+# write_cron_file
+
+# load_config_file
+# load variables from config file
+if [ -f "$configFile" ]
+then
+  source "$configFile"
+  LogInfo "Successfully loaded config file ($configFile)"
+
+  # check script and config version
+  if [ "$scriptConfigVersion" != "$configVersion" ]
+  then
+    LogError "Config version ($configVersion) and script version ($scriptConfigVersion) missmatch"
+    write_config
+    MailSend
+    exit 2
+  fi
+else
+  write_config
+  source "$configFile"
+fi
+# load_config_file
+
+# check config - stop on disabled execution
+if [ "$enabled" = "false" ]
+then
+  LogInfo "Script ($scriptName) is disabled in config file ($configFile)"
+  MailSend
+  exit 1
+fi
+
+# process_variables
+#kontrola nastaveni promennych
+if [ -z "$postgresqlUser" ]
+then
+  LogError "Empty one of the key variables postgresqlUser=($postgresqlUser)"
+  MailSend
+  exit 2
+elif [ -n "$postgresqlPassword" ]
+then
+  export PGPASSWORD="$postgresqlPassword"
+fi
+
+# if port is set in configuration, pass it to variable
+if [ -n "$postgresqlPort" ]
+then
+  LogInfo "Postgresql port set to $postgresqlPort"
+  postgresqlParams="$postgresqlParams -p $postgresqlPort"
+fi
+
+# if host is set in configuration, pass it to variable
+if [ -n "$postgresqlHost" ]
+then
+  LogInfo "Postgresql host set to $postgresqlHost"
+  postgresqlParams="$postgresqlParams -h $postgresqlHost"
+fi
+
+# for sudo -u postgres change group of backupDir
+if [[ "$postgresqlCommandPrefix" =~ "sudo -u " ]]
+then
+  user=$(echo "$postgresqlCommandPrefix" | sed -e 's/sudo -u\ *\(\w\+\)\ */\1/g')
+  chown -R "$user:$user" "$backupDir"
+  find "$backupDir" -type d -exec chmod g+s {} \;
+  LogInfo "Changing group ownership of $backupDir structure"
+fi
+# process_variables
+
+# Load_database_names
+#vycteni databazi z postgresql do pole
+#-w don't ask for password, PGPASSWORD must be set or $HOME/.pgpass file present
+#-At disable visual improvements of query result
+#-c command to execute
+backupARRAY=($(${postgresqlCommandPrefix}psql -U"$postgresqlUser" ${postgresqlParams} -w -At \
+  -c "select datname from pg_database where not datistemplate and datallowconn order by datname;"))
+RvLog "backupARRAY (${backupARRAY[@]}) loaded from postgresql"
+# Load_database_names
+
+# maintain_all_databases
+#provede dumpy vsech existujicich databazi
+for database in ${backupARRAY[@]}
+do
+  # bezne zalohovani bez vynechavani - vcetne pripadne databaze zabbixu
+  echo "vacuum analyze; vacuum freeze;" | \
+		${postgresqlCommandPrefix}psql -U"$postgresqlUser" ${postgresqlParams} -w
+  RvLog "Maintenance of postgresql database ($database)"
+done
+# maintain_all_databases
+
+unset PGPASSWORD
+
+MailSend
+exit 0

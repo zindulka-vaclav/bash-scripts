@@ -264,7 +264,7 @@ then
   LogError "Empty one of the key variables backupLimit=($backupLimit),\n\
     postgresqlUser=($postgresqlUser), backupDir=($backupDir)"
   MailSend
-  exit 2gg
+  exit 2
 elif [ -n "$postgresqlPassword" ]
 then
   export PGPASSWORD="$postgresqlPassword"
@@ -283,7 +283,6 @@ then
   LogInfo "Postgresql host set to $postgresqlHost"
   postgresqlParams="$postgresqlParams -h $postgresqlHost"
 fi
-# process_variables
 
 # for sudo -u postgres change group of backupDir
 if [[ "$postgresqlCommandPrefix" =~ "sudo -u " ]]
@@ -293,6 +292,7 @@ then
   find "$backupDir" -type d -exec chmod g+s {} \;
   LogInfo "Changing group ownership of $backupDir structure"
 fi
+# process_variables
 
 # Load_database_names
 #vycteni databazi z postgresql do pole
