@@ -38,6 +38,8 @@ cronFile="/etc/cron.d/$scriptName"
 # variable to pass postgres variables if set in config file
 postgresqlParams=""
 
+scriptDir="/usr/local/bash-scripts"
+
 verbose=0
 # Declare_variables
 
