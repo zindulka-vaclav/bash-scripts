@@ -2,12 +2,12 @@
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=0
+VERSION_PATCH=1
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 #inicializacni script pro nahrani a nastaveni rsync stahovani na server
 sbinDir="/usr/local/sbin"
-defaultList="server-backup mysql-backup postgresql-backup postgresql-backup-one check-server"
+defaultList="server-backup mysql-backup postgresql-backup postgresql-maintenance postgresql-backup-one check-server"
 
 # pri predani parametru -x provede zapnuti debug logu
 if [ "$1" = "-x" ]
@@ -28,7 +28,44 @@ scriptName="initialize"
 #cesta ke scriptu
 scriptDir="/usr/local/bash-scripts"
 verbose=0
-deBug=0
+DEBUG_OUTPUT="false"
+
+# Process_parameters
+while [ "$#" -gt 0 ]
+do
+  # PARAMETERS
+  # print version and exit
+  if [ "$1" = "-V" ] || [ "$1" = "--version" ]
+  then
+    echo "$VERSION"
+    exit 0
+    # print help and exit
+  elif [ "$1" = "-h" ] || [ "$1" = "--help" ]
+  then
+    Usage
+    exit 0
+  # OPTIONS
+  elif [ "$1" = "-x" ]
+  then
+    LogWarning "Detected parameter $1 for bash debug output of the script"
+    set -x
+  elif [ "$1" = "-d" ]
+  then
+    LogWarning "Detected parameter $1 for debug output of log messages"
+    DEBUG_OUTPUT="true"
+  elif [ "$1" = "-v" ]
+  then
+    LogWarning "Detected parameter $1 for verbose output of log messages"
+    verbose=1
+  else
+    LogError "Unknown parameter detected: $1"
+    Usage
+    exit 1
+  fi
+  
+  shift
+done
+# Process_parameters
 
 #spousti se pouze pod rootem
 if [ "$UID" -eq 0 ]
@@ -36,30 +73,29 @@ then
 	# pokud jeste neexistuje slozka se scripty, provede klonovani repozitare
 	if [ ! -d "$scriptDir" ]
 	then
-		#stazeni obsahu ze serveru
-		git clone git@git.tlapnet.cz:vaclavz/bash-scripts.git "$scriptDir"
-		echo "Provedeno oklonovani git repozitare"
+		# clone repository if it doesn't exists
+		git clone https://gitlab.com/zindulka.vaclav/bash-scripts.git "$scriptDir"
+		echo "Bash scripts repository cloned from gitlab"
 	# pokud uz slozka existuje, prepne se do ni a udela pull
 	else
-		cd "$scriptDir"
-		git pull
-		echo "Provedena aktualizace git repozitare"
-		cd -
+		cd "$scriptDir" || exit 2
+		git checkout -f master && git pull || exit 2
+		echo "Git repository updated from master"
+		cd - || exit 2
 	fi
 else
-	echo "Pozor - spusteni je nutne provest jako root"
+	echo "Error - script has to be executed as root"
 	exit 1
 fi
 
-
 #_LOGOVANI
 # nacteni konfiguracniho souboru s funkcemi
-. "$scriptDir/funkce"
+source "$scriptDir/funkce"
 
 CheckDir "$pidDir"
 CheckDir "$logDir"
 
-LogInfo "Zacatek scriptu"
+LogInfo "Start of script $scriptName"
 
 echo "$$" > "$startFile"
 RvLog "start file set to ($$)"
@@ -67,22 +103,22 @@ RvLog "start file set to ($$)"
 #spousti se pouze pod rootem
 if [ "$UID" -eq 0 ]
 then
-	LogInfo "kontrolni cast scriptu"
+	LogInfo "Checking existence of necessary folders"
 	CheckDir "$configDir"
 	CheckDir "$pidDir"
 	CheckDir "$scriptDir"
 	CheckDir "$scripty"
 
-	LogInfo "nalinkovani scriptu do $sbinDir"
+	LogInfo "Linking of scripts from list to $sbinDir"
 
     #nalinkuje vsechny scripty ve slozce $scriptDir do slozky $sbinDir
 	for script in $(find "$scriptDir" -maxdepth 1 -mindepth 1 -type f | grep -v "funkce" )
 	do
 		ln -sf "$script" "$sbinDir"
-		RvLog "vytvoren symlink ($script)"
+		RvLog "Script ($script) symlinked"
 	done
 
-	LogInfo "konfigurace cronu a logrotate"
+	LogInfo "Configuration of cron and logrotate"
 	# nalinkovani logrotate pro scripty
 	ln -sf "$scriptDir"/etc/logrotate.d/scripty /etc/logrotate.d/scripty	
 	RvLog "ln -sf $scriptDir/etc/logrotate.d/scripty /etc/logrotate.d/scripty"
@@ -92,4 +128,4 @@ then
 fi
 
 MailSend
-exit "$rv"
+exit 0

@@ -12,6 +12,7 @@
 1.0.0 - vychozi verze s doplnenymi kontrolnimi mechanismy
 
 # initialize
+1.0.1 - added postgresql-maintenance
 1.0.0 - vychozi verze scriptu
 
 # mysql-backup
@@ -28,6 +29,9 @@ masteru
 1.0.3 - zmena zalohovani na directory, zruseno separatni zalohovani zabbixu
 1.0.2 - doplneno baleni male zalohy a komentovani radku s extensions
 1.0.1 - doplnen dump databaze zabbixu s vynechanim tabulek partitions.*
+
+# postgresql-maintenance
+1.0.0 - initial version of script for database maintenance
 
 # postgresql-backup-one
 1.0.0 - tvorba scriptu pro zalohovani jedne databaze bez pouziti uzivatele
