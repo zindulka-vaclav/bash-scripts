@@ -328,7 +328,7 @@ do
   
   # bezne zalohovani bez vynechavani - vcetne pripadne databaze zabbixu
   ${postgresqlCommandPrefix}pg_dump -U"$postgresqlUser" ${postgresqlParams} \
-		-w --dbname="$database" --format=directory --file="$backupPath/$todayTime"
+		-w --dbname="$database" --format=directory --no-owner --file="$backupPath/$todayTime"
   RvLog "Created dump of postgresql database ($backupPath/$todayTime)"
   
   # check number of backups - to prevent deleting old backups in case of problems
