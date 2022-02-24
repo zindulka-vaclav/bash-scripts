@@ -76,7 +76,7 @@ then
 	if [ ! -d "$scriptDir" ]
 	then
 		# clone repository if it doesn't exists
-		git clone https://gitlab.com/prospanek/bash-scripts.git "$scriptDir"
+		git clone https://gitlab.com/zindulka.vaclav/bash-scripts.git "$scriptDir"
 		echo "Bash scripts repository cloned from gitlab"
 	# pokud uz slozka existuje, prepne se do ni a udela pull
 	else
