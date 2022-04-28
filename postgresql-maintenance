@@ -9,7 +9,7 @@ set -- "$@"
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=0
+VERSION_PATCH=1
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # Declare_variables
@@ -266,15 +266,6 @@ then
   LogInfo "Postgresql host set to $postgresqlHost"
   postgresqlParams="$postgresqlParams -h $postgresqlHost"
 fi
-
-# for sudo -u postgres change group of backupDir
-if [[ "$postgresqlCommandPrefix" =~ "sudo -u " ]]
-then
-  user=$(echo "$postgresqlCommandPrefix" | sed -e 's/sudo -u\ *\(\w\+\)\ */\1/g')
-  chown -R "$user:$user" "$backupDir"
-  find "$backupDir" -type d -exec chmod g+s {} \;
-  LogInfo "Changing group ownership of $backupDir structure"
-fi
 # process_variables
 
 # Load_database_names
@@ -293,7 +284,7 @@ for database in ${backupARRAY[@]}
 do
   # bezne zalohovani bez vynechavani - vcetne pripadne databaze zabbixu
   echo "vacuum analyze; vacuum freeze;" | \
-		${postgresqlCommandPrefix}psql -U"$postgresqlUser" ${postgresqlParams} -w
+		${postgresqlCommandPrefix}psql -U"$postgresqlUser" ${postgresqlParams} -w "$database"
   RvLog "Maintenance of postgresql database ($database)"
 done
 # maintain_all_databases
