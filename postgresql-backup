@@ -3,14 +3,14 @@
 #provadi postgresql dumpy vsech databazi - vyzaduje uzivatele postgres pristupneho heslem
 
 # set pipes to fail after first error, preserving last return value of failed process
-set -o pipefail
+set -eo pipefail
 
 # set all parameters passed during execution of the script as single parameters
 set -- "$@"
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=7
+VERSION_PATCH=8
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # Declare_variables
@@ -30,7 +30,7 @@ scriptName="postgresql-backup"
 instanceName=""
 backupDir="/var/backup/postgresql"
 
-# how many backups to keep
+# how many backup days to keep
 backupLimit=14
 
 # date / date time for backup structure
