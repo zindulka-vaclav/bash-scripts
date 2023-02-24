@@ -25,7 +25,7 @@ set -o pipefail
 
 VERSION_MAJOR=1
 VERSION_MINOR=1
-VERSION_PATCH=2
+VERSION_PATCH=3
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 
@@ -60,7 +60,7 @@ then
 fi
 
 # vypsani verze
-if [ "$1" = "-V" -o "$1" = "--version" ]
+if [ "$1" = "-V" ] || [ "$1" = "--version" ]
 then
 	echo "$VERSION"
 	MailSend
@@ -68,7 +68,7 @@ then
 fi
 
 # zapne verbose vystup
-if [ "$1" = "-v" -o "$1" = "--verbose" ]
+if [ "$1" = "-v" ] || [ "$1" = "--verbose" ]
 then
 	verbose=1
 fi
@@ -186,7 +186,7 @@ fi
 
 
 #kontrola, zda mysqlPassword neobsahuje EMPTY
-if [ $(grep -c "ZABBIX_PASSWORD" "$pgpassFile") -ne 0 ]
+if [ "$(grep -c "ZABBIX_PASSWORD" "$pgpassFile")" -ne 0 ]
 then
 	LogError "POZOR, neni nastaveno heslo pro zabbix-sync v [$pgpassFile]"
 	MailSend
@@ -196,7 +196,7 @@ fi
 # _kontrola_DNS
 LogInfo "kontrola DNS zaznamu"
 
-if [ $(ping -c1 "$dnsName" | grep -c "$remoteIP") -eq 0 ]
+if [ "$(ping -c1 "$dnsName" | grep -c "$remoteIP")" -eq 0 ]
 then
 	LogError "Problem pri overeni DNS zaznamu [$dnsName] nemiri na pozadovanou IP [$remoteIP]"
 	LogError "Script nebude pokracovat, aby nedoslo k prepsani produkcni databaze"
@@ -224,6 +224,15 @@ pg_dump -U$remoteDbUser -w --dbname=$remoteDbName --create --clean \
 	--format=directory --file=$remoteBackupDir --jobs=$procNum --schema=public
 EOF
 then
+  if ! systemctl restart apache2 zabbix-server
+  then
+    LogError "Problem se zapinanim apache nebo zabbix-serveru po prenosu databaze"
+    MailSend
+    exit 3
+  else
+    LogInfo "Uspesne spusten apache nebo zabbix-serveru po prenosu databaze"
+  fi
+
 	LogError "Problem pri vytvareni zalohy databaze na ostrem serveru"
 	MailSend
 	exit 3
@@ -240,6 +249,15 @@ if ! (rm -r "$localBackupDir" 2> /dev/null;
 			scp -r "$remoteUser"@"$remoteIP":"$remoteBackupDir" "$localBackupDir" > /dev/null &&\
 			systemctl restart postgresql)
 then
+  if ! systemctl restart apache2 zabbix-server
+  then
+    LogError "Problem se zapinanim apache nebo zabbix-serveru po prenosu databaze"
+    MailSend
+    exit 4
+  else
+    LogInfo "Uspesne spusten apache nebo zabbix-serveru po prenosu databaze"
+  fi
+
 	LogError "Problem pri stahovani zalohy z ostreho serveru [$remoteIP]"
 	MailSend
 	exit 4
@@ -259,6 +277,15 @@ CREATE SCHEMA IF NOT EXISTS trends AUTHORIZATION $localDbUser;
 CREATE SCHEMA IF NOT EXISTS history AUTHORIZATION $localDbUser;
 EOF
 then
+  if ! systemctl restart apache2 zabbix-server
+  then
+    LogError "Problem se zapinanim apache nebo zabbix-serveru po prenosu databaze"
+    MailSend
+    exit 5
+  else
+    LogInfo "Uspesne spusten apache nebo zabbix-serveru po prenosu databaze"
+  fi
+
 	LogError "Problem pri dropu a znovu vytvoreni databaze $localDbName"
 	MailSend
 	exit 5
@@ -273,6 +300,15 @@ if ! (cd "$localBackupDir" &&\
 			pg_restore -U "$localDbUser" -w --dbname="$localDbName" \
 				--if-exists --clean --schema=public --jobs="$procNum" .)
 then
+  if ! systemctl restart apache2 zabbix-server
+  then
+    LogError "Problem se zapinanim apache nebo zabbix-serveru po prenosu databaze"
+    MailSend
+    exit 6
+  else
+    LogInfo "Uspesne spusten apache nebo zabbix-serveru po prenosu databaze"
+  fi
+
 	LogError "Problem pri obnove databaze na zaloznim serveru"
 	MailSend
 	exit 6
@@ -284,6 +320,15 @@ fi
 # _prenos_certifikatu
 if ! rsync -a zabbix-sync@nmszabbix.tlapnet.cz:/etc/letsencrypt/{archive,csr,live,renewal} /etc/letsencrypt
 then
+  if ! systemctl restart apache2 zabbix-server
+  then
+    LogError "Problem se zapinanim apache nebo zabbix-serveru po prenosu databaze"
+    MailSend
+    exit 7
+  else
+    LogInfo "Uspesne spusten apache nebo zabbix-serveru po prenosu databaze"
+  fi
+
 	LogError "Problem pri prenosu certifikatu letsencryptu"
 	MailSend
 	exit 7
