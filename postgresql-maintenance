@@ -9,7 +9,7 @@ set -- "$@"
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=1
+VERSION_PATCH=2
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # Declare_variables
@@ -275,17 +275,23 @@ fi
 #-c command to execute
 backupARRAY=($(${postgresqlCommandPrefix}psql -U"$postgresqlUser" ${postgresqlParams} -w -At \
   -c "select datname from pg_database where not datistemplate and datallowconn order by datname;"))
-RvLog "backupARRAY (${backupARRAY[@]}) loaded from postgresql"
+RvLog "backupARRAY loaded from postgresql:"
+RvLog "${backupARRAY[@]}" 
 # Load_database_names
 
 # maintain_all_databases
 #provede dumpy vsech existujicich databazi
 for database in ${backupARRAY[@]}
 do
-  # bezne zalohovani bez vynechavani - vcetne pripadne databaze zabbixu
-  echo "vacuum analyze; vacuum freeze;" | \
+	LogInfo "$(date "+%F %R") vacuum analyze of $database"
+  echo "vacuum analyze;" | \
+		${postgresqlCommandPrefix}psql -U"$postgresqlUser" ${postgresqlParams} -w "$database"
+
+	LogInfo "$(date "+%F %R") vacuum freeze of $database"
+  echo "vacuum freeze;" | \
 		${postgresqlCommandPrefix}psql -U"$postgresqlUser" ${postgresqlParams} -w "$database"
   RvLog "Maintenance of postgresql database ($database)"
+	LogInfo "$(date "+%F %R") vacuum of $database completed"
 done
 # maintain_all_databases
 
