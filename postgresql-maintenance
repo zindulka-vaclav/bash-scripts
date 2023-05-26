@@ -9,7 +9,7 @@ set -- "$@"
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=3
+VERSION_PATCH=4
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # Declare_variables
@@ -294,11 +294,11 @@ for database in ${backupARRAY[@]}
 do
 	LogInfo "$(date "+%F %R") vacuum analyze of $database"
   echo "vacuum analyze;" | \
-		timeout "$postgresqlTimeout" ${postgresqlCommandPrefix}psql -U"$postgresqlUser" ${postgresqlParams} -w "$database"
+		timeout "$postgresqlTimeout" ${postgresqlCommandPrefix}psql -U"$postgresqlUser" ${postgresqlParams} -w "$database" || continue
 
 	LogInfo "$(date "+%F %R") vacuum freeze of $database"
   echo "vacuum freeze;" | \
-		timeout "$postgresqlTimeout" ${postgresqlCommandPrefix}psql -U"$postgresqlUser" ${postgresqlParams} -w "$database"
+		timeout "$postgresqlTimeout" ${postgresqlCommandPrefix}psql -U"$postgresqlUser" ${postgresqlParams} -w "$database" || continue
   RvLog "Maintenance of postgresql database ($database)"
 	LogInfo "$(date "+%F %R") vacuum of $database completed"
 done
