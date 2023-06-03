@@ -2,7 +2,7 @@
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=3
+VERSION_PATCH=4
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 #inicializacni script pro nahrani a nastaveni rsync stahovani na server
@@ -151,6 +151,9 @@ then
   then
     rm "/etc/cron.d/check-server"
   fi
+
+  rm -rf "$sbinDir/Changelog" "$sbinDir/Session.vim" "$sbinDir/check-server"
+  rm -rf "/var/spool/scripty/check-server*"
 fi
 
 MailSend
