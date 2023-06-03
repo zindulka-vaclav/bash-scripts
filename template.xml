@@ -24,49 +24,6 @@
             </applications>
             <items>
                 <item>
-                    <name>check-server error</name>
-                    <type>7</type>
-                    <snmp_community/>
-                    <multiplier>0</multiplier>
-                    <snmp_oid/>
-                    <key>vfs.file.exists[/var/spool/scripty/check-server.err]</key>
-                    <delay>600</delay>
-                    <history>7</history>
-                    <trends>30</trends>
-                    <status>0</status>
-                    <value_type>3</value_type>
-                    <allowed_hosts/>
-                    <units/>
-                    <delta>0</delta>
-                    <snmpv3_contextname/>
-                    <snmpv3_securityname/>
-                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
-                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
-                    <snmpv3_authpassphrase/>
-                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
-                    <snmpv3_privpassphrase/>
-                    <formula>1</formula>
-                    <delay_flex/>
-                    <params/>
-                    <ipmi_sensor/>
-                    <data_type>0</data_type>
-                    <authtype>0</authtype>
-                    <username/>
-                    <password/>
-                    <publickey/>
-                    <privatekey/>
-                    <port/>
-                    <description>kontroluje zda existuje $errorFile</description>
-                    <inventory_link>0</inventory_link>
-                    <applications>
-                        <application>
-                            <name>Scripty</name>
-                        </application>
-                    </applications>
-                    <valuemap/>
-                    <logtimefmt/>
-                </item>
-                <item>
                     <name>mysql-backup error</name>
                     <type>7</type>
                     <snmp_community/>
@@ -272,49 +229,6 @@
                     <privatekey/>
                     <port/>
                     <description>kontroluje zda existuje $errorFile</description>
-                    <inventory_link>0</inventory_link>
-                    <applications>
-                        <application>
-                            <name>Scripty</name>
-                        </application>
-                    </applications>
-                    <valuemap/>
-                    <logtimefmt/>
-                </item>
-                <item>
-                    <name>check-server start</name>
-                    <type>7</type>
-                    <snmp_community/>
-                    <multiplier>0</multiplier>
-                    <snmp_oid/>
-                    <key>vfs.file.time[/var/spool/scripty/check-server.start]</key>
-                    <delay>600</delay>
-                    <history>7</history>
-                    <trends>30</trends>
-                    <status>0</status>
-                    <value_type>3</value_type>
-                    <allowed_hosts/>
-                    <units>s</units>
-                    <delta>0</delta>
-                    <snmpv3_contextname/>
-                    <snmpv3_securityname/>
-                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
-                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
-                    <snmpv3_authpassphrase/>
-                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
-                    <snmpv3_privpassphrase/>
-                    <formula>1</formula>
-                    <delay_flex/>
-                    <params/>
-                    <ipmi_sensor/>
-                    <data_type>0</data_type>
-                    <authtype>0</authtype>
-                    <username/>
-                    <password/>
-                    <publickey/>
-                    <privatekey/>
-                    <port/>
-                    <description>kontroluje cas posledniho spusteni scriptu</description>
                     <inventory_link>0</inventory_link>
                     <applications>
                         <application>
@@ -547,26 +461,6 @@
         </template>
     </templates>
     <triggers>
-        <trigger>
-            <expression>{Tlapnet Active Scripty:vfs.file.exists[/var/spool/scripty/check-server.err].last()}=1</expression>
-            <name>Scripty - check-server error @ {HOST.NAME}</name>
-            <url/>
-            <status>1</status>
-            <priority>3</priority>
-            <description>Na serveru {HOST.NAME} je po skonceni scriptu soubor .error, nutna kontrola</description>
-            <type>0</type>
-            <dependencies/>
-        </trigger>
-        <trigger>
-            <expression>({Tlapnet Active Scripty:vfs.file.time[/var/spool/scripty/check-server.start].now()} - {Tlapnet Active Scripty:vfs.file.time[/var/spool/scripty/check-server.start].last()})&gt;172800</expression>
-            <name>Scripty - check-server start &gt; 48h @ {HOST.NAME}</name>
-            <url/>
-            <status>0</status>
-            <priority>3</priority>
-            <description>Na serveru {HOST.NAME} byl spusten script naposledy pred vice nez 48h.</description>
-            <type>0</type>
-            <dependencies/>
-        </trigger>
         <trigger>
             <expression>{Tlapnet Active Scripty:vfs.file.exists[/var/spool/scripty/mysql-backup.err].last()}=1</expression>
             <name>Scripty - mysql-backup error @ {HOST.NAME}</name>

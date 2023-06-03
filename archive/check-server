@@ -1,0 +1,77 @@
+#!/bin/bash
+#check-server
+#script, ktery bude spousteny cronem a bude provadet nastavene kontroly na serveru
+
+VERSION_MAJOR=1
+VERSION_MINOR=0
+VERSION_PATCH=1
+VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
+
+# config_file 
+# check_cron_file
+# link_scripts
+
+# pri predani parametru -x provede zapnuti debug logu
+if [ "$1" = "-x" ]
+then
+	set -x
+fi
+
+# vypsani verze
+if [ "$1" = "-V" ] || [ "$1" = "--version" ]
+then
+	echo "$VERSION"
+	exit 0
+fi
+
+scriptName="check-server"
+scriptDir="/usr/local/bash-scripts"
+verbose=0
+
+
+#nacteni definice funkci LogInfo,LogError,RvCheck,MailSend z knihovny
+. $scriptDir/funkce 
+LogInfo "zacatek scriptu"
+echo "$$" > "$startFile"
+LogInfo "($startFile) set to ($$)"
+
+
+# config_file
+if [ -f "$configFile" ]
+then
+	. "$configFile"
+	LogInfo "Config file: ($configFile) has been loaded"
+else
+	{
+	echo "# set disabled to 1 to stop script execution"
+	echo "disabled=0"
+	} > $configFile
+	LogInfo "Config file has been written for: ($HOSTNAME)"
+	. "$configFile"
+fi
+# config_file
+
+
+# set disable=1 to stop script execution
+if [ "$disabled" -eq 1 ]
+then
+	LogInfo "Script is disabled in config file: ($configFile)"
+	exit 0
+fi
+
+
+
+
+# check_cron_file
+if [ ! -e /etc/cron.d/check-server ]
+then
+	{ 
+		echo "# daily check-server script execution"
+		echo "0 20 * * * root /bin/bash -x $scriptDir/check-server &>$logDir/check-server.log"
+	} > /etc/cron.d/check-server
+	RvLog "Created cron file /etc/cron.d/check-server"
+fi
+# check_cron_file
+
+MailSend
+exit 0
