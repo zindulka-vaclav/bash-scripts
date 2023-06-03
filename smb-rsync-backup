@@ -6,7 +6,7 @@ set -eo pipefail
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=1
+VERSION_PATCH=2
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # Declare_variables
@@ -188,18 +188,16 @@ then
 	exit 1
 fi
 
-if ! eval "$mountCommand"
-then
-	LogError "mountCommand ($mountCommand) failed"
-	MailSend
-	exit 1
-else
-	LogInfo "mountCommand ($mountCommand) successful"
-fi
-
 if [ -z "$backupTarget" ]
 then
 	LogError "backupTarget is not set in ($configFile)"
+	MailSend
+	exit 1
+fi
+
+if ! mountpoint -q "$backupTarget" && ! eval "$mountCommand"
+then
+	LogError "mountCommand ($mountCommand) failed"
 	MailSend
 	exit 1
 fi
@@ -209,6 +207,8 @@ then
 	LogError "backupTarget ($backupTarget) is not mounted"
 	MailSend
 	exit 1
+else
+	LogInfo "backupTarget ($backupTarget) is mounted"
 fi
 
 if [ -z "$backupList" ]
