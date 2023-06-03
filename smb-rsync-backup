@@ -1,0 +1,263 @@
+#!/bin/bash
+# smb-rsync-backup - backup directories to smb share
+# mount command is defined in config file
+
+set -eo pipefail
+
+VERSION_MAJOR=1
+VERSION_MINOR=0
+VERSION_PATCH=0
+VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
+
+# Declare_variables
+# Load_functions
+# Define_functions
+# _Usage
+# _write_config
+# Process_parameters
+
+# Declare_variables
+#promenne se nastavuji v $config souboru, ktery se nacte, pokud existuje
+
+#promenne, ktere by se moc menit nemely, ale ve vysledku je to burt
+scriptName="smb-rsync-backup"
+
+#dnesni datum ve formatu YYYY-MM-DD
+todayDate="$(date +%F)"	
+
+#cesta ke scriptu
+scriptDir="/usr/local/bash-scripts"
+scriptConfigVersion=1.0
+cronFile="/etc/cron.d/$scriptName"
+verbose=0
+# Declare_variables
+
+
+# Load_functions
+. $scriptDir/funkce	
+LogDebug "Sourced common script funkce"
+LogInfo "script ($scriptName) - zacatek"
+echo "$$" > "${startFile:UNDEFINED}"
+LogInfo "($startFile) set to ($$)"
+# Load_functions
+
+# Define_functions
+# _Usage
+# print usage of script
+Usage() {
+  echo -e "Script for regular rsync backups to smb share.
+Mount command is defined in config file.
+
+Usage:
+  $SCRIPT_NAME  [OPTIONS] [PARAMETERS]
+
+Supported parameters:
+  -h | --help       Print usage informations
+  -V | --version    Print version of the script
+
+Supported options:
+  -x               Bash debug output of the script - can be used with any other parameter
+  -d               Script debug output of logs - can be used with any other parameter
+  -v               Script verbose output of logs - can be used with any other option"
+}
+# _Usage
+
+# _write_config
+# write new config file / update from old one
+write_config(){
+
+  # default values for variables - updated in case of existing file
+  configVersion="$scriptConfigVersion"
+  enabled="false"
+  mountCommand="mount -t cifs -o username=,password=,rw //server/share /path/to/mount"
+  backupList="/path/to/backup1 /path/to/backup2"
+  backupTarget="/path/to/backup/target"
+  
+  # if config file exists, create backup and source it to preserve values
+  if [ -f "$configFile" ]
+  then
+    cp "$configFile" "${configFile}.back"
+    RvLog "Created backup of old config file (${configFile}.back)"
+    source "${configFile}.back"
+
+    # replace config version with script version to update config file
+    configVersion="$scriptConfigVersion"
+  fi
+  
+  {
+    echo "# config version - checked by the script - for automatic config update"
+    echo "configVersion=\"$configVersion\""
+    echo "# enable (true) / disable (false) execution of the script"
+    echo "enabled=\"$enabled\""
+    echo "# mount command for smb share - login informations can be stored in file"
+    echo "# https://serverfault.com/questions/367934/how-do-i-pass-credential-file-to-mount-cifs"
+    echo "# https://askubuntu.com/questions/657512/how-to-permanently-mount-password-protected-samba-share-with-workgroup"
+    echo "mountCommand=\"$mountCommand\""
+    echo "# list of directories to backup - separated by space, without trailing slash"
+    echo "# each target will be backed up to separate directory in backupTarget"
+    echo "backupList=\"$backupList\""
+    echo "# target directory for backups - without trailing slash"
+    echo "backupTarget=$backupTarget"
+  } > "$configFile"
+	chmod 600 "$configFile"
+  LogError "Config file $configFile written on ($HOSTNAME)"
+}
+# _write_config
+# Define_functions
+
+# Process_parameters
+while [ "$#" -gt 0 ]
+do
+  # PARAMETERS
+  # print version and exit
+  if [ "$1" = "-V" ] || [ "$1" = "--version" ]
+  then
+    echo "$VERSION"
+    exit 0
+    # print help and exit
+  elif [ "$1" = "-h" ] || [ "$1" = "--help" ]
+  then
+    Usage
+    exit 0
+  # OPTIONS
+  elif [ "$1" = "-x" ]
+  then
+    LogWarning "Detected parameter $1 for bash debug output of the script"
+    set -x
+  elif [ "$1" = "-d" ]
+  then
+    LogWarning "Detected parameter $1 for debug output of log messages"
+    DEBUG_OUTPUT="true"
+  elif [ "$1" = "-v" ]
+  then
+    LogWarning "Detected parameter $1 for verbose output of log messages"
+    verbose=1
+  else
+    LogError "Unknown parameter detected: $1"
+    Usage
+    exit 1
+  fi
+  
+  shift
+done
+# Process_parameters
+
+if [ ! -e /etc/cron.d/smb-rsync-backup ]
+then
+	{ 
+		echo "# daily execution of smb-rsync-backup"
+		echo "0 4 * * * root $sbinDir/smb-rsync-backup &>$outputFile"
+	} > /etc/cron.d/smb-rsync-backup
+	RvLog "Created cron file (/etc/cron.d/smb-rsync-backup)"
+fi
+
+
+# load_config_file
+# load variables from config file
+if [ -f "$configFile" ]
+then
+  source "$configFile"
+  LogInfo "Successfully loaded config file ($configFile)"
+
+  # check script and config version
+  if [ "$scriptConfigVersion" != "$configVersion" ]
+  then
+    LogError "Config version ($configVersion) and script version ($scriptConfigVersion) missmatch"
+    write_config
+    MailSend
+    exit 2
+  fi
+else
+  write_config
+  source "$configFile"
+fi
+# load_config_file
+
+
+if [ "$enabled" != "true" ]
+then
+	LogInfo "script ($scriptName) is disabled in ($configFile)"
+	MailSend
+	exit 0
+fi
+
+if [ -z "$mountCommand" ]
+then
+	LogError "mountCommand is not set in ($configFile)"
+	MailSend
+	exit 1
+fi
+
+if [ -z "$backupList" ]
+then
+	LogError "backupList is not set in ($configFile)"
+	MailSend
+	exit 1
+fi
+
+if [ -z "$backupTarget" ]
+then
+	LogError "backupTarget is not set in ($configFile)"
+	MailSend
+	exit 1
+fi
+
+if ! mountpoint -q "$backupTarget"
+then
+	LogError "backupTarget ($backupTarget) is not mounted"
+	MailSend
+	exit 1
+fi
+
+if ! eval "$mountCommand"
+then
+	LogError "mountCommand ($mountCommand) failed"
+	MailSend
+	exit 1
+else
+	LogInfo "mountCommand ($mountCommand) successful"
+fi
+
+LogInfo "Start of backups"
+for backupDir in $backupList
+do
+	if [ ! -d "$backupDir" ]
+	then
+		LogError "backupDir ($backupDir) is not a directory"
+		continue
+	fi
+	
+	backupName="$(basename "$backupDir")"
+	backupTargetDir="$backupTarget/$backupName"
+	
+	if [ ! -d "$backupTargetDir" ]
+	then
+		mkdir "$backupTargetDir"
+		RvLog "Created backup target directory ($backupTargetDir)"
+	fi
+	
+	LogInfo "Start of backup ($backupDir)"
+
+	if ! rsync -rlt --delete --bwlimit=50M "$backupDir" "$backupTargetDir" > "$logDir/${scriptName}_${backupName}.log"
+	then
+		LogError "rsync failed for ($backupDir)"
+		continue
+	else
+		LogInfo "rsync successful for ($backupDir)"
+	fi
+
+	RvLog "End of backup ($backupDir)"
+done
+LogInfo "End of all backups"
+
+if ! umount "$backupTarget"
+then
+	LogError "umount failed for ($backupTarget)"
+	MailSend
+	exit 1
+else
+	LogInfo "umount successful for ($backupTarget)"
+fi
+
+MailSend
+exit 0
