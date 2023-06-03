@@ -6,7 +6,7 @@ set -eo pipefail
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=2
+VERSION_PATCH=3
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # Declare_variables
@@ -229,7 +229,7 @@ do
 	
 	LogInfo "Start of backup ($backupDir)"
 
-	if ! rsync -rlt --delete --bwlimit=50M "$backupDir" "$backupTarget" > "$logDir/${scriptName}.log"
+	if ! rsync -rlt --delete "$backupDir" "$backupTarget" > "$logDir/${scriptName}.log"
 	then
 		LogError "rsync failed for ($backupDir)"
 		continue
