@@ -27,7 +27,7 @@ todayDate="$(date +%F)"
 
 #cesta ke scriptu
 scriptDir="/usr/local/bash-scripts"
-scriptConfigVersion=1.0
+scriptConfigVersion=1.1
 cronFile="/etc/cron.d/$scriptName"
 verbose=0
 # Declare_variables
@@ -92,7 +92,8 @@ write_config(){
     echo "# mount command for smb share - login informations can be stored in file"
     echo "# https://serverfault.com/questions/367934/how-do-i-pass-credential-file-to-mount-cifs"
     echo "# https://askubuntu.com/questions/657512/how-to-permanently-mount-password-protected-samba-share-with-workgroup"
-    echo "# mount -t cifs -o username=,password=,rw,iocharset=utf8,mapchars,file_mode=0775,dir_mode=0775 //server/share /path/to/mount"
+    echo "# mount -t cifs -o username=,password=,rw,iocharset=utf8,mapchars,file_mode=0775,dir_mode=0775,vers=1.0 //server/share /path/to/mount"
+    echo "# vers=1.0 is needed if rsync reports rename problems for nested files and nothing remains in target directory"
     echo "mountCommand=\"$mountCommand\""
     echo "# list of directories to backup - separated by space, without trailing slash"
     echo "# each target will be backed up to separate directory in backupTarget"
