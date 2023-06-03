@@ -152,8 +152,8 @@ then
     rm "/etc/cron.d/check-server"
   fi
 
-  rm -rf "$sbinDir/Changelog" "$sbinDir/Session.vim" "$sbinDir/check-server"
-  rm -rf "/var/spool/scripty/check-server*"
+  rm -f "$sbinDir/Changelog" "$sbinDir/Session.vim" "$sbinDir/check-server"
+  rm -f /var/spool/scripty/check-server*
 fi
 
 MailSend
