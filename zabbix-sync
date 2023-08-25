@@ -25,7 +25,7 @@ set -o pipefail
 
 VERSION_MAJOR=1
 VERSION_MINOR=1
-VERSION_PATCH=3
+VERSION_PATCH=4
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 
@@ -158,7 +158,7 @@ then
 	#vytvori zaznam, ktery pravidelne spousti dany script v nastaveny cas a kompletni vystup se uklada do /var/log
 	{ 
 		echo "#denni spousteni zabbix-sync"
-		echo "0 2 * * * root $sbinDir/zabbix-sync &>$outputFile"
+		echo "0 2 * * * root flock -n $pidDir/zabbix-sync.lock $sbinDir/zabbix-sync &>$outputFile"
 	} > /etc/cron.d/zabbix-sync
 	RvLog "zapsano spousteni zabbix-sync scriptu do cronu"
 fi
