@@ -47,7 +47,7 @@ deBug=0
 
 #_LOGOVANI
 
-#nacteni definice funkci Log,LogError,RvLog,MailSend z knihovny
+#nacteni definice funkci Log,LogError,RvLog,StopProcessing z knihovny
 . "$scriptDir"/funkce 
 LogInfo "script ($scriptName) - zacatek"
 echo "$$" > "$startFile"
@@ -197,5 +197,5 @@ done
 LogInfo "kopirovani dokonceno"
 
 
-MailSend
+StopProcessing
 exit 0

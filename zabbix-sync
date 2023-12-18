@@ -63,7 +63,7 @@ fi
 if [ "$1" = "-V" ] || [ "$1" = "--version" ]
 then
 	echo "$VERSION"
-	MailSend
+	StopProcessing
 	exit 0
 fi
 
@@ -75,7 +75,7 @@ fi
 
 
 #_LOGOVANI
-#nacteni definice funkci Log,LogError,RvLog,MailSend z knihovny
+#nacteni definice funkci Log,LogError,RvLog,StopProcessing z knihovny
 . $scriptDir/funkce	
 LogInfo "script ($scriptName) - zacatek"
 echo "$$" > "$startFile"
@@ -147,7 +147,7 @@ if [ ! -f "$pgpassFile" ]
 then
 	write_pgpassFile
 	LogError "Zapsan novy soubor [$pgpassFile] nutno doplnit heslo pro uzivatele zabbix"
-	MailSend
+	StopProcessing
 	exit 1
 fi
 
@@ -172,7 +172,7 @@ else
 	write
 	. "$configFile"
 	LogError "Byl zapsan konfiguracni soubor, nutno upravit konfiguraci"
-	MailSend
+	StopProcessing
 	exit 1
 fi
 
@@ -180,7 +180,7 @@ fi
 if [ "$disabled" -eq 1 ]
 then
 	LogInfo "script ($scriptName) byl disablovan v konfiguracnim souboru ($configFile)"
-	MailSend
+	StopProcessing
 	exit 1
 fi
 
@@ -189,7 +189,7 @@ fi
 if [ "$(grep -c "ZABBIX_PASSWORD" "$pgpassFile")" -ne 0 ]
 then
 	LogError "POZOR, neni nastaveno heslo pro zabbix-sync v [$pgpassFile]"
-	MailSend
+	StopProcessing
 	exit 1
 fi
 
@@ -200,7 +200,7 @@ if [ "$(ping -c1 "$dnsName" | grep -c "$remoteIP")" -eq 0 ]
 then
 	LogError "Problem pri overeni DNS zaznamu [$dnsName] nemiri na pozadovanou IP [$remoteIP]"
 	LogError "Script nebude pokracovat, aby nedoslo k prepsani produkcni databaze"
-	MailSend
+	StopProcessing
 	exit 1
 else
 	if ! systemctl stop apache2 zabbix-server
@@ -227,14 +227,14 @@ then
   if ! systemctl restart apache2 zabbix-server
   then
     LogError "Problem se zapinanim apache nebo zabbix-serveru po prenosu databaze"
-    MailSend
+    StopProcessing
     exit 3
   else
     LogInfo "Uspesne spusten apache nebo zabbix-serveru po prenosu databaze"
   fi
 
 	LogError "Problem pri vytvareni zalohy databaze na ostrem serveru"
-	MailSend
+	StopProcessing
 	exit 3
 else
 	LogInfo "Uspesne vytvorena zaloha ostre databaze"
@@ -252,14 +252,14 @@ then
   if ! systemctl restart apache2 zabbix-server
   then
     LogError "Problem se zapinanim apache nebo zabbix-serveru po prenosu databaze"
-    MailSend
+    StopProcessing
     exit 4
   else
     LogInfo "Uspesne spusten apache nebo zabbix-serveru po prenosu databaze"
   fi
 
 	LogError "Problem pri stahovani zalohy z ostreho serveru [$remoteIP]"
-	MailSend
+	StopProcessing
 	exit 4
 else
 	LogInfo "Uspesne stazena zaloha z remote serveru [$remoteIP]"
@@ -280,14 +280,14 @@ then
   if ! systemctl restart apache2 zabbix-server
   then
     LogError "Problem se zapinanim apache nebo zabbix-serveru po prenosu databaze"
-    MailSend
+    StopProcessing
     exit 5
   else
     LogInfo "Uspesne spusten apache nebo zabbix-serveru po prenosu databaze"
   fi
 
 	LogError "Problem pri dropu a znovu vytvoreni databaze $localDbName"
-	MailSend
+	StopProcessing
 	exit 5
 else
 	LogInfo "Uspesne dropnuta a znovu vytvorena databaze $localDbName"
@@ -303,14 +303,14 @@ then
   if ! systemctl restart apache2 zabbix-server
   then
     LogError "Problem se zapinanim apache nebo zabbix-serveru po prenosu databaze"
-    MailSend
+    StopProcessing
     exit 6
   else
     LogInfo "Uspesne spusten apache nebo zabbix-serveru po prenosu databaze"
   fi
 
 	LogError "Problem pri obnove databaze na zaloznim serveru"
-	MailSend
+	StopProcessing
 	exit 6
 else
 	LogInfo "Uspesne obnovena databaze na zaloznim serveru"
@@ -323,14 +323,14 @@ then
   if ! systemctl restart apache2 zabbix-server
   then
     LogError "Problem se zapinanim apache nebo zabbix-serveru po prenosu databaze"
-    MailSend
+    StopProcessing
     exit 7
   else
     LogInfo "Uspesne spusten apache nebo zabbix-serveru po prenosu databaze"
   fi
 
 	LogError "Problem pri prenosu certifikatu letsencryptu"
-	MailSend
+	StopProcessing
 	exit 7
 else
 	LogInfo "Uspesne preneseny certifikaty letsencryptu"
@@ -341,12 +341,12 @@ fi
 if ! systemctl restart apache2 zabbix-server
 then
 	LogError "Problem se zapinanim apache nebo zabbix-serveru po prenosu databaze"
-	MailSend
+	StopProcessing
 	exit 8
 else
 	LogInfo "Uspesne spusten apache nebo zabbix-serveru po prenosu databaze"
 fi
 # _restart_apache_a_zabbix_serveru
 
-MailSend
+StopProcessing
 exit 0

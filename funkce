@@ -2,7 +2,7 @@
 #verze 1.0.3
 #logovani 
 #definice funkci pro logovani behu programu a posilani vystupu mailem
-#_LIST #_Log #_LogError #_RvLog #_MailSend #_CheckDir 
+#_LIST #_Log #_LogError #_RvLog #_StopProcessing #_CheckDir 
 #_TestDir #_RemoveDir #_RecreateDir
 
 
@@ -46,7 +46,7 @@ stopFile="$pidDir/${scriptName}.stop"
 #errorFile je prazdny soubor, slouzi pouze pro indikaci pripadnych erroru	
 errorFile="$pidDir/${scriptName}.err"
 
-#soubor, ktery oznacuje spusteny script, maze se ve funkci MailSend
+#soubor, ktery oznacuje spusteny script, maze se ve funkci StopProcessing
 runFile="$pidDir/${scriptName}.run"
 
 #soubor obsahujici pid beziciho logovaciho loopu
@@ -119,8 +119,8 @@ RvLog(){
 	return "$rv"
 }
 
-#_MailSend
-MailSend(){
+#_StopProcessing
+StopProcessing(){
 	#posle errory z prubehu, pokud se nejake zapsaly do $errorFile - pouze z duvodu kompatibility a 
 	# pouziti ve vsech scriptech - maily neposila - jen loguje
 
@@ -130,7 +130,7 @@ MailSend(){
 	if [ "$1" != "keep" ]
 	then
 
-		#odstrani runFile, pri volani MailSend, jelikoz po nem vzdy nasleduje exit
+		#odstrani runFile, pri volani StopProcessing, jelikoz po nem vzdy nasleduje exit
 		#s vyjimkou parametru keep
 		[ -f "$runFile" ] && rm "$runFile"
 		RvLog "odstraneni runFile ($runFile)"
@@ -138,13 +138,7 @@ MailSend(){
 
 	if [ -e "$errorFile" ]
 	then
-		LogError "MailSend - script ($scriptName) - nastaly problemy, posilam mailem vystup"
-
-		# pokud jsou pro script definovany mailove notifikace
-		if [ -n "$mailNotification" ]
-		then
-			cat "$logFile" | grep "$scriptName" | /usr/bin/mail -s "ERROR - ($scriptName) - ($HOSTNAME)" "$mailNotification"
-		fi
+		LogError "StopProcessing - script ($scriptName) - nastaly problemy"
 
 		return 11
 	else
@@ -220,7 +214,7 @@ TestRunFile()
 			kill "$scriptPid"
 			#pokud na pidu stale bezi puvodni proces, skonci a nic nedela
 			LogError "script ($scriptName) stale bezi ($scriptPid), proveden kill puvodniho ($scriptName) - ($runFile)"
-			#MailSend "keep"
+			#StopProcessing "keep"
 			#exit 6
 		fi
 	else

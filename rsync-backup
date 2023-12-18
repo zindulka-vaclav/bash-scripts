@@ -63,7 +63,7 @@ deBug=0
 
 #_LOGOVANI
 
-#nacteni definice funkci Log,LogError,RvLog,MailSend z knihovny
+#nacteni definice funkci Log,LogError,RvLog,StopProcessing z knihovny
 . $scriptDir/funkce	
 LogInfo "script ($scriptName) - zacatek"
 echo "$$" > "$startFile"
@@ -144,7 +144,7 @@ fi
 if [ "$disabled" -eq 1 ]
 then
 	LogInfo "script ($scriptName) je disablovany v ($configFile)"
-	MailSend
+	StopProcessing
 	exit 0
 fi
 
@@ -159,7 +159,7 @@ case "$rsyncMode" in
 		then
 			LogError "case - nfspush - nebyla nastavena nektera z potrebnych promennych"
 			LogError "backupList=($backupList), backupLimit=($backupLimit), nfsMountPoint=($nfsMountPoint), nfsMountDevice=($nfsMountDevice)"
-			MailSend
+			StopProcessing
 			exit 2
 		else
 			LogInfo "case - nfspush - byly nacteny tyto promenne"
@@ -189,7 +189,7 @@ case "$rsyncMode" in
 		then
 			LogError "case - nfspull - nebyla nastavena nektera z potrebnych promennych"
 			LogError "backupList=($backupList), backupLimit=($backupLimit), nfsMountPoint=($nfsMountPoint), nfsMountDevice=($nfsMountDevice), localDir=($localDir)"
-			MailSend
+			StopProcessing
 			exit 3
 		else
 			LogInfo "case - nfspull - byly nacteny tyto promenne"
@@ -219,7 +219,7 @@ case "$rsyncMode" in
 		then
 			LogError "case - local - nebyla nastavena nektera z potrebnych promennych"
 			LogError "backupList=($backupList), backupLimit=($backupLimit), localDir=($localDir)"
-			MailSend
+			StopProcessing
 			exit 4
 		else
 			LogInfo "case - local - byly nacteny tyto promenne"
@@ -239,7 +239,7 @@ case "$rsyncMode" in
 		;;
 	*)
 		LogError "nebyl spravne nastaven rsyncMode v ($configFile)"
-		MailSend
+		StopProcessing
 		exit 1
 		;;
 esac
@@ -256,7 +256,7 @@ case "$backupMode" in
 		;;
 	*)
 		LogError "nebyl nastaven parametr backupMode, nebo byl nastaven spatne ($backupMode)"
-		MailSend
+		StopProcessing
 		exit 1
 		;;
 esac
@@ -281,7 +281,7 @@ then
 	if [ "$?" -ne 0 ]
 	then
 		LogError "Nepodarilo se pripojit oddil ($nfsMountDevice) na ($nfsMountPoint), koncime"
-		MailSend
+		StopProcessing
 		exit 5
 	else
 		LogInfo "uspesne pripojen ($nfsMountDevice) na ($nfsMountPoint)"
@@ -416,6 +416,6 @@ then
 fi
 
 
-MailSend
+StopProcessing
 LogInfo "OK - ($scriptName) zalohovani dokonceno"
 exit 0

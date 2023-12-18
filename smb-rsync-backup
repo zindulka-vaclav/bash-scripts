@@ -166,7 +166,7 @@ then
   then
     LogError "Config version ($configVersion) and script version ($scriptConfigVersion) missmatch"
     write_config
-    MailSend
+    StopProcessing
     exit 2
   fi
 else
@@ -179,35 +179,35 @@ fi
 if [ "$enabled" != "true" ]
 then
 	LogInfo "script ($scriptName) is disabled in ($configFile)"
-	MailSend
+	StopProcessing
 	exit 0
 fi
 
 if [ -z "$mountCommand" ]
 then
 	LogError "mountCommand is not set in ($configFile)"
-	MailSend
+	StopProcessing
 	exit 1
 fi
 
 if [ -z "$backupTarget" ]
 then
 	LogError "backupTarget is not set in ($configFile)"
-	MailSend
+	StopProcessing
 	exit 1
 fi
 
 if ! mountpoint -q "$backupTarget" && ! eval "$mountCommand"
 then
 	LogError "mountCommand ($mountCommand) failed"
-	MailSend
+	StopProcessing
 	exit 1
 fi
 
 if ! mountpoint -q "$backupTarget"
 then
 	LogError "backupTarget ($backupTarget) is not mounted"
-	MailSend
+	StopProcessing
 	exit 1
 else
 	LogInfo "backupTarget ($backupTarget) is mounted"
@@ -216,7 +216,7 @@ fi
 if [ -z "$backupList" ]
 then
 	LogError "backupList is not set in ($configFile)"
-	MailSend
+	StopProcessing
 	exit 1
 fi
 
@@ -246,11 +246,11 @@ LogInfo "End of all backups"
 if ! umount "$backupTarget"
 then
 	LogError "umount failed for ($backupTarget)"
-	MailSend
+	StopProcessing
 	exit 1
 else
 	LogInfo "umount successful for ($backupTarget)"
 fi
 
-MailSend
+StopProcessing
 exit 0

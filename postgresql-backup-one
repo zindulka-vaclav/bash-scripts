@@ -54,7 +54,7 @@ verbose=0
 # Declare_variables
 
 # Load_functions
-#nacteni definice funkci Log,LogError,RvLog,MailSend z knihovny
+#nacteni definice funkci Log,LogError,RvLog,StopProcessing z knihovny
 source $scriptDir/funkce	
 LogDebug "Sourced common script funkce"
 LogInfo "script ($scriptName) - zacatek"
@@ -243,7 +243,7 @@ then
   then
     LogError "Config version ($configVersion) and script version ($scriptConfigVersion) missmatch"
     write_config
-    MailSend
+    StopProcessing
     exit 2
   fi
 else
@@ -256,7 +256,7 @@ fi
 if [ "$enabled" = "false" ]
 then
   LogInfo "Script ($scriptName) is disabled in config file ($configFile)"
-  MailSend
+  StopProcessing
   exit 1
 fi
 
@@ -268,7 +268,7 @@ then
   LogError "Empty one of the key variables backupLimit=($backupLimit),\n\
     postgresqlUser=($postgresqlUser), postgresqlDatabase=($postgresqlDatabase),\n\
     backupDir=($backupDir)"
-  MailSend
+  StopProcessing
   exit 2
 elif [ -n "$postgresqlPassword" ]
 then
@@ -337,5 +337,5 @@ fi
 
 unset PGPASSWORD
 
-MailSend
+StopProcessing
 exit 0

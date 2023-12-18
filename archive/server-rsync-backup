@@ -33,7 +33,7 @@ deBug=0
 
 #_LOGOVANI
 
-#nacteni definice funkci Log,LogError,RvLog,MailSend z knihovny
+#nacteni definice funkci Log,LogError,RvLog,StopProcessing z knihovny
 . $scriptDir/funkce	
 LogInfo "script ($scriptName) - zacatek"
 echo "$$" > "$startFile"
@@ -107,7 +107,7 @@ then
 	then
 		write
 		LogError "vynuceno zapsani noveho configu, protoze obsahoval jeste nfs"
-		MailSend
+		StopProcessing
 		exit 2
 	fi
 
@@ -117,7 +117,7 @@ then
 else
 	write
 	LogError "zapsan cisty konfiguracni soubor"
-	MailSend
+	StopProcessing
 	exit 2
 fi
 
@@ -134,7 +134,7 @@ fi
 if [ "$disabled" -eq 1 ]
 then
 	LogInfo "script ($scriptName) je disablovany v ($configFile)"
-	MailSend
+	StopProcessing
 	exit 0
 fi
 
@@ -143,7 +143,7 @@ fi
 if [ $(echo "$rsyncTarget" | grep -c "ip.ad.re.sa") -ne 0 ] || [ -z "$rsyncTarget" ]
 then
 	LogError "nebyl nastaven cil zalohovani v souboru [$configFile], promenna rsyncTarget"
-	MailSend
+	StopProcessing
 	exit 3
 else
 	LogInfo "zaloha se provede na [$rsyncTarget]"
@@ -171,7 +171,7 @@ then
 #pokud nenastala ani jedna moznost, pak neexistuje soubor s heslem
 else
 	LogError "nebyl nalezen soubor s heslem"
-	MailSend
+	StopProcessing
 	exit 4
 fi
 
@@ -193,6 +193,6 @@ case "$rv" in
 		;;
 esac
 
-MailSend
+StopProcessing
 LogInfo "OK - ($scriptName) zalohovani dokonceno"
 exit 0

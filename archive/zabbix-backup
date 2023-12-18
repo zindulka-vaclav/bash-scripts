@@ -43,7 +43,7 @@ deBug=0
 
 #_LOGOVANI
 
-#nacteni definice funkci Log,LogError,RvLog,MailSend z knihovny
+#nacteni definice funkci Log,LogError,RvLog,StopProcessing z knihovny
 . $scriptDir/funkce	
 LogInfo "script ($scriptName) - zacatek"
 echo "$$" > "$startFile"
@@ -106,7 +106,7 @@ else
 	then
 		LogError "Promenna mysqlPassword je prazdna, je nutne nastavit heslo do mysql databaze v [$mysqlDefaultsFile]"
 		write_mysqlDefaultsFile
-		MailSend
+		StopProcessing
 		exit 12
 	fi
 fi
@@ -143,7 +143,7 @@ fi
 if [ $(grep -c "EMPTY" "$mysqlDefaultsFile") -ne 0 ]
 then
 	LogError "POZOR, neni nastaveno heslo pro mysql-backup v [$mysqlDefaultsFile]"
-	MailSend
+	StopProcessing
 	exit 13
 fi
 
@@ -227,6 +227,6 @@ else
 fi
 
 
-MailSend
+StopProcessing
 LogInfo "OK - zalohovani dokonceno"
 exit 0

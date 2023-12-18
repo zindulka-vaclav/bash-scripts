@@ -54,7 +54,7 @@ deBug=0
 
 #_LOGOVANI
 
-#nacteni definice funkci Log,LogError,RvLog,MailSend z knihovny
+#nacteni definice funkci Log,LogError,RvLog,StopProcessing z knihovny
 . $scriptDir/funkce	
 LogInfo "script ($scriptName) - zacatek"
 echo "$$" > "$startFile"
@@ -107,7 +107,7 @@ if [ ! -f "$pgpassFile" ]
 then
 	write_pgpassFile
 	LogError "Zapsan novy soubor [$pgpassFile] nutno doplnit heslo pro uzivatele zabbix"
-	MailSend
+	StopProcessing
 	exit 1
 fi
 
@@ -138,7 +138,7 @@ fi
 if [ "$disabled" -eq 1 ]
 then
 	LogInfo "script ($scriptName) byl disablovan v konfiguracnim souboru ($configFile)"
-	MailSend
+	StopProcessing
 	exit 1
 fi
 
@@ -147,7 +147,7 @@ fi
 if [ $(grep -c "ZABBIX_PASSWORD" "$pgpassFile") -ne 0 ]
 then
 	LogError "POZOR, neni nastaveno heslo pro zabbix-backup v [$pgpassFile]"
-	MailSend
+	StopProcessing
 	exit 13
 fi
 
@@ -197,6 +197,6 @@ LogInfo "obnova vseho najednou - (delsi zprovozneni, mene prace):"
 LogInfo "pg_restore -Uzabbix --clean --if-exists --dbname=zabbix --exit-on-error --format=directory --jobs=8 /var/backup/zabbix/$backupDate - obnova vseho najednou"
 LogInfo "systemctl start zabbix-server apache2"
 
-MailSend
+StopProcessing
 LogInfo "OK - zalohovani dokonceno"
 exit 0

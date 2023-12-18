@@ -156,5 +156,5 @@ then
   rm -f /var/spool/scripty/check-server*
 fi
 
-MailSend
+StopProcessing
 exit 0

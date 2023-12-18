@@ -9,8 +9,8 @@ set -- "$@"
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=4
-VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
+VERSION_PATCH=5
+VERSION="${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}"
 
 # Declare_variables
 # Load_functions
@@ -31,9 +31,9 @@ instanceName=""
 # path to config file - multiple instances have multiple config files
 configFile=""
 
-scriptConfigVersion=1.1
+scriptConfigVersion="1.1"
 
-cronFile="/etc/cron.d/$scriptName"
+cronFile="/etc/cron.d/${scriptName}"
 
 # variable to pass postgres variables if set in config file
 postgresqlParams=""
@@ -45,12 +45,12 @@ verbose=0
 
 # Load_functions
 # load definition of functions LogInfo, LogWarning, LogError,
-# RvLog, MailSend z knihovny
-source $scriptDir/funkce
+# RvLog, StopProcessing z knihovny
+source "${scriptDir}/funkce"
 LogDebug "Sourced common script funkce"
-LogInfo "script ($scriptName) - start"
-echo "$$" > "$startFile"
-LogInfo "($startFile) set to ($$)"
+LogInfo "script (${scriptName}) - start"
+echo "$$" > "${startFile}"
+LogInfo "(${startFile}) set to ($$)"
 # Load_functions
 
 # Define_functions
@@ -77,7 +77,7 @@ In case of Docker image create .pgpass file in \$HOME of user running psql comma
 postgres, root.
 
 Usage:
-  $SCRIPT_NAME  [OPTIONS] [PARAMETERS]
+  ${SCRIPT_NAME}  [OPTIONS] [PARAMETERS]
 
 Supported parameters:
   -h | --help       Print usage informations
@@ -97,7 +97,7 @@ Supported options:
 write_config(){
 
   # default values for variables - updated in case of existing file
-  configVersion="$scriptConfigVersion"
+  configVersion="${scriptConfigVersion}"
   enabled="false"
   postgresqlCommandPrefix=""
   postgresqlUser="postgres"
@@ -107,37 +107,37 @@ write_config(){
   postgresqlTimeout=600
   
   # if config file exists, create backup and source it to preserve values
-  if [ -f "$configFile" ]
+  if [ -f "${configFile}" ]
   then
-    cp "$configFile" "${configFile}.back"
+    cp "${configFile}" "${configFile}.back"
     RvLog "Created backup of old config file (${configFile}.back)"
     source "${configFile}.back"
 
     # replace config version with script version to update config file
-    configVersion="$scriptConfigVersion"
+    configVersion="${scriptConfigVersion}"
   fi
   
   {
     echo "# config version - checked by the script - for automatic config update"
-    echo "configVersion=\"$configVersion\""
+    echo "configVersion=\"${configVersion}\""
     echo "# enable (true) / disable (false) execution of the script"
-    echo "enabled=\"$enabled\""
+    echo "enabled=\"${enabled}\""
     echo "# prefix for commands - keep space at the end of command"
     echo "# sudo -u postgres | docker exec DOCKER_CONTAINER "
     echo "# for docker exec you have to map /var/backup in container to local dir "
-    echo "postgresqlCommandPrefix=\"$postgresqlCommandPrefix\""
+    echo "postgresqlCommandPrefix=\"${postgresqlCommandPrefix}\""
     echo "# user to process backup - idealy superuser - postgres or any other"
-    echo "postgresqlUser=\"$postgresqlUser\""
+    echo "postgresqlUser=\"${postgresqlUser}\""
     echo "# password to access postgresql - can be omited using sudo -u postgres prefix of .pgpass file"
-    echo "postgresqlPassword=\"$postgresqlPassword\""
+    echo "postgresqlPassword=\"${postgresqlPassword}\""
     echo "# port for database connection - default is 5432"
-    echo "postgresqlPort=$postgresqlPort"
+    echo "postgresqlPort=${postgresqlPort}"
     echo "# hostname / IP for database connection - default is empty - localhost | 192.168.1.2"
-    echo "postgresqlHost=\"$postgresqlHost\""
+    echo "postgresqlHost=\"${postgresqlHost}\""
     echo "# timeout for vacuum analyze and vacuum freeze commands - default is 600 seconds"
-    echo "postgresqlTimeout=$postgresqlTimeout"
-  } > "$configFile"
-  LogError "Config file $configFile written on ($HOSTNAME)"
+    echo "postgresqlTimeout=${postgresqlTimeout}"
+  } > "${configFile}"
+  LogError "Config file ${configFile} written on (${HOSTNAME})"
 }
 # _write_config
 # Define_functions
@@ -149,7 +149,7 @@ do
   # print version and exit
   if [ "$1" = "-V" ] || [ "$1" = "--version" ]
   then
-    echo "$VERSION"
+    echo "${VERSION}"
     exit 0
     # print help and exit
   elif [ "$1" = "-h" ] || [ "$1" = "--help" ]
@@ -166,10 +166,10 @@ do
     instanceName="${1// /_}"
 
     # overwrite config file
-    configFile="$configDir/$scriptName-$instanceName.conf"
+    configFile="${configDir}/${scriptName}-${instanceName}.conf"
 
-    LogWarning "Processing instance $instanceName"
-    LogWarning "Defined alternative config file $configFile"
+    LogWarning "Processing instance ${instanceName}"
+    LogWarning "Defined alternative config file ${configFile}"
   # OPTIONS
   elif [ "$1" = "-x" ]
   then
@@ -199,81 +199,81 @@ done
 # Process_parameters
 
 # write_cron_file
-if [ ! -e "$cronFile" ]
+if [ ! -e "${cronFile}" ]
 then
   # create new cron file
   {
-    echo "# execute $scriptName daily - default instance"
-    echo "0 22 * * * root $sbinDir/$scriptName &>$outputFile"
-  } > "$cronFile"
-  RvLog "Created new cron file $cronFile for $scriptName"
+    echo "# execute ${scriptName} daily - default instance"
+    echo "0 22 * * * root ${sbinDir}/${scriptName} &>${outputFile}"
+  } > "${cronFile}"
+  RvLog "Created new cron file ${cronFile} for ${scriptName}"
 else
   # for non-default instance - create new line in cron file if not present
-  if  [ -n "$instanceName" ] &&\
-      [ $(grep -Ec "$scriptName.*$instanceName" "$cronFile") -eq 0 ]
+  if  [ -n "${instanceName}" ] &&\
+      [ $(grep -Ec "${scriptName}.*${instanceName}" "${cronFile}") -eq 0 ]
   then
     # add line for this instance
     {
-      echo "0 23 * * * root $sbinDir/$scriptName -i $instanceName &>$outputFile"
-    } >> "$cronFile"
-    RvLog "Added instance $instanceName to cron file $cronFile for $scriptName"
+      echo "0 23 * * * root ${sbinDir}/${scriptName} -i ${instanceName} &>${outputFile}"
+    } >> "${cronFile}"
+    RvLog "Added instance ${instanceName} to cron file ${cronFile} for ${scriptName}"
   fi
 fi
 # write_cron_file
 
 # load_config_file
 # load variables from config file
-if [ -f "$configFile" ]
+if [ -f "${configFile}" ]
 then
-  source "$configFile"
-  LogInfo "Successfully loaded config file ($configFile)"
+  source "${configFile}"
+  LogInfo "Successfully loaded config file (${configFile})"
 
   # check script and config version
-  if [ "$scriptConfigVersion" != "$configVersion" ]
+  if [ "${scriptConfigVersion}" != "${configVersion}" ]
   then
-    LogError "Config version ($configVersion) and script version ($scriptConfigVersion) missmatch"
+    LogError "Config version (${configVersion}) and script version (${scriptConfigVersion}) missmatch"
     write_config
-    MailSend
+    StopProcessing
     exit 2
   fi
 else
   write_config
-  source "$configFile"
+  source "${configFile}"
 fi
 # load_config_file
 
 # check config - stop on disabled execution
-if [ "$enabled" = "false" ]
+if [ "${enabled}" = "false" ]
 then
-  LogInfo "Script ($scriptName) is disabled in config file ($configFile)"
-  MailSend
+  LogInfo "Script (${scriptName}) is disabled in config file (${configFile})"
+  StopProcessing
   exit 1
 fi
 
 # process_variables
 #kontrola nastaveni promennych
-if [ -z "$postgresqlUser" ]
+if [ -z "${postgresqlUser}" ]
 then
-  LogError "Empty one of the key variables postgresqlUser=($postgresqlUser)"
-  MailSend
+  LogError "Empty one of the key variables postgresqlUser=(${postgresqlUser})"
+  StopProcessing
   exit 2
-elif [ -n "$postgresqlPassword" ]
+elif [ -n "${postgresqlPassword}" ]
 then
-  export PGPASSWORD="$postgresqlPassword"
+  export PGPASSWORD="${postgresqlPassword}"
 fi
 
 # if port is set in configuration, pass it to variable
-if [ -n "$postgresqlPort" ]
+if [ -n "${postgresqlPort}" ]
 then
-  LogInfo "Postgresql port set to $postgresqlPort"
-  postgresqlParams="$postgresqlParams -p $postgresqlPort"
+  LogInfo "Postgresql port set to ${postgresqlPort}"
+  postgresqlParams="${postgresqlParams} -p ${postgresqlPort}"
 fi
 
 # if host is set in configuration, pass it to variable
-if [ -n "$postgresqlHost" ]
+if [ -n "${postgresqlHost}" ]
 then
-  LogInfo "Postgresql host set to $postgresqlHost"
-  postgresqlParams="$postgresqlParams -h $postgresqlHost"
+  LogInfo "Postgresql host set to ${postgresqlHost}"
+  postgresqlParams="${postgresqlParams} -h ${postgresqlHost}"
 fi
 # process_variables
 
@@ -282,29 +282,49 @@ fi
 #-w don't ask for password, PGPASSWORD must be set or $HOME/.pgpass file present
 #-At disable visual improvements of query result
 #-c command to execute
-backupARRAY=($(${postgresqlCommandPrefix}psql -U"$postgresqlUser" ${postgresqlParams} -w -At \
-  -c "select datname from pg_database where not datistemplate and datallowconn order by datname;"))
-RvLog "backupARRAY loaded from postgresql:"
-RvLog "${backupARRAY[@]}" 
+maintenanceArray=($(${postgresqlCommandPrefix}psql -U"${postgresqlUser}" ${postgresqlParams} \
+  -w -At \
+  -c "SELECT DATNAME FROM pg_database WHERE NOT datistemplate AND datallowconn ORDER BY datname;"))
+if [ $? -ne 0 ]
+then
+  LogError "Failed to load database names from postgresql"
+  exit 2
+else
+  LogInfo "maintenanceArray loaded from postgresql:"
+  LogInfo "${maintenanceArray[@]}" 
+fi
 # Load_database_names
 
 # maintain_all_databases
 #provede dumpy vsech existujicich databazi
-for database in ${backupARRAY[@]}
+for database in ${maintenanceArray[@]}
 do
-	LogInfo "$(date "+%F %R") vacuum analyze of $database"
-  echo "vacuum analyze;" | \
-		timeout "$postgresqlTimeout" ${postgresqlCommandPrefix}psql -U"$postgresqlUser" ${postgresqlParams} -w "$database" || continue
+	LogInfo "Starting VACUUM ANALYZE of ${database}"
+  if ! timeout "${postgresqlTimeout}" ${postgresqlCommandPrefix}psql -U"${postgresqlUser}" ${postgresqlParams} -w "${database}" -c "VACUUM ANALYZE;"; then
+    LogError "VACUUM ANALYZE of PostgreSQL database (${database}) failed"
+  else
+    LogInfo "Finished VACUUM ANALYZE of ${database}"
+  fi
 
-	LogInfo "$(date "+%F %R") vacuum freeze of $database"
-  echo "vacuum freeze;" | \
-		timeout "$postgresqlTimeout" ${postgresqlCommandPrefix}psql -U"$postgresqlUser" ${postgresqlParams} -w "$database" || continue
-  RvLog "Maintenance of postgresql database ($database)"
-	LogInfo "$(date "+%F %R") vacuum of $database completed"
+	LogInfo "Starting vacuum freeze of ${database}"
+  if ! timeout "${postgresqlTimeout}" ${postgresqlCommandPrefix}psql -U"${postgresqlUser}" ${postgresqlParams} -w "${database}" -c "VACUUM FREEZE;"; then
+    LogError "VACUUM FREEZE of PostgreSQL database (${database}) failed"
+  else
+    LogInfo "Finished VACUUM FREEZE of ${database}"
+  fi
+
+  LogInfo "Starting REINDEX of ${database}"
+  if ! timeout "${postgresqlTimeout}" ${postgresqlCommandPrefix}psql -U"${postgresqlUser}" ${postgresqlParams} -w "${database}" -c "REINDEX DATABASE ${database};"; then
+    LogError "REINDEX of PostgreSQL database (${database}) failed"
+    continue
+  else
+    LogInfo "Finished REINDEX of ${database}"
+  fi
 done
 # maintain_all_databases
 
 unset PGPASSWORD
 
-MailSend
+LogInfo "Script (${scriptName}) completed successfully"
+StopProcessing
 exit 0
