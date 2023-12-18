@@ -29,7 +29,7 @@ scriptDir="/usr/local/bash-scripts"
 verbose=0
 
 
-#nacteni definice funkci LogInfo,LogError,RvCheck,MailSend z knihovny
+#nacteni definice funkci LogInfo,LogError,RvCheck,StopProcessing z knihovny
 . $scriptDir/funkce 
 LogInfo "zacatek scriptu"
 echo "$$" > "$startFile"
@@ -73,5 +73,5 @@ then
 fi
 # check_cron_file
 
-MailSend
+StopProcessing
 exit 0

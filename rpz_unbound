@@ -37,7 +37,7 @@ FINAL_ZONE_FILE="/etc/unbound/unbound.conf.d/unbound_$RPZ_ZONE.conf"
 
 #_LOGOVANI
 
-#nacteni definice funkci Log,LogError,RvLog,MailSend z knihovny
+#nacteni definice funkci Log,LogError,RvLog,StopProcessing z knihovny
 . $scriptDir/funkce	
 LogInfo "script ($scriptName) - zacatek"
 echo "$$" > "$startFile"
@@ -145,6 +145,6 @@ else
 	RvLog "Rozbalen puvodni, funkcni soubor"
 fi
 
-MailSend
+StopProcessing
 LogInfo "OK - aktualizace rpz zon dokoncena"
 exit 0
