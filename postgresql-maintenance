@@ -99,7 +99,7 @@ write_config(){
   # default values for variables - updated in case of existing file
   configVersion="${scriptConfigVersion}"
   enabled="false"
-  reindexExceptions=("template0" "template1" "postgres")
+  reindexExceptions=("\"template0\"" "\"template1\"" "\"postgres\"")
   postgresqlCommandPrefix=""
   postgresqlUser="postgres"
   postgresqlPassword=""
