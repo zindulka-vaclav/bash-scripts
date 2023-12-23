@@ -9,7 +9,7 @@ set -- "$@"
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=5
+VERSION_PATCH=6
 VERSION="${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}"
 
 # Declare_variables
@@ -31,7 +31,7 @@ instanceName=""
 # path to config file - multiple instances have multiple config files
 configFile=""
 
-scriptConfigVersion="1.1"
+scriptConfigVersion="1.2"
 
 cronFile="/etc/cron.d/${scriptName}"
 
@@ -99,6 +99,7 @@ write_config(){
   # default values for variables - updated in case of existing file
   configVersion="${scriptConfigVersion}"
   enabled="false"
+  reindexExceptions=("template0" "template1" "postgres")
   postgresqlCommandPrefix=""
   postgresqlUser="postgres"
   postgresqlPassword=""
@@ -136,6 +137,8 @@ write_config(){
     echo "postgresqlHost=\"${postgresqlHost}\""
     echo "# timeout for vacuum analyze and vacuum freeze commands - default is 600 seconds"
     echo "postgresqlTimeout=${postgresqlTimeout}"
+    echo "# space separated list of databases to skip everyday reindexing"
+    echo "reindexExceptions=(${reindexExceptions[@]})"
   } > "${configFile}"
   LogError "Config file ${configFile} written on (${HOSTNAME})"
 }
@@ -317,14 +320,19 @@ do
     LogInfo "Finished VACUUM FREEZE of ${database}"
   fi
 
-  LogInfo "Starting REINDEX of ${database}"
-  if ! timeout "${postgresqlTimeout}" ${postgresqlCommandPrefix}psql -U"${postgresqlUser}" \
-    ${postgresqlParams} -w "${database}" -c "REINDEX DATABASE ${database};" \
-    2>&1 | tee -a "${logFile}"; then
+  # check if database is in reindex exceptions
+  if [[ ! " ${reindexExceptions[@]} " =~ " ${database} " ]]; then
+    LogInfo "Starting REINDEX of ${database}"
+    if ! timeout "${postgresqlTimeout}" ${postgresqlCommandPrefix}psql -U"${postgresqlUser}" \
+      ${postgresqlParams} -w "${database}" -c "REINDEX DATABASE ${database};" \
+      2>&1 | tee -a "${logFile}"; then
 
-    LogError "REINDEX of PostgreSQL database (${database}) failed"
+      LogError "REINDEX of PostgreSQL database (${database}) failed"
+    else
+      LogInfo "Finished REINDEX of ${database}"
+    fi
   else
-    LogInfo "Finished REINDEX of ${database}"
+    LogInfo "Skipping REINDEX of ${database} - database is in reindex exceptions"
   fi
 done
 # maintain_all_databases
