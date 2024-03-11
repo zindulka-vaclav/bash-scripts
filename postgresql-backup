@@ -369,8 +369,8 @@ backupPath="$backupDir/roles/"
 CheckDir "$backupPath"
 
 ${postgresqlCommandPrefix}pg_dumpall -U"$postgresqlUser" ${postgresqlParams_pg_dumpall} \
-		-w --globals-only --file="$backupPath/roles-$todayTime.sql"
-RvLog "Created dump of postgresql database ($backupPath/roles-$todayTime.sql)"
+		-w --globals-only --file="$backupPath/roles-$todayDate.sql"
+RvLog "Created dump of postgresql database ($backupPath/roles-$todayDate.sql)"
   
 # check number of backups - to prevent deleting old backups in case of problems
 if [ "$(find "$backupPath" -maxdepth 1 -mindepth 1 -type f | wc -l)" -gt "$backupLimit" ]
