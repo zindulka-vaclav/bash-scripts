@@ -10,7 +10,7 @@ set -- "$@"
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=8
+VERSION_PATCH=9
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # Declare_variables
@@ -24,6 +24,7 @@ VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 # process_variables
 # Load_database_names
 # dump_all_databases
+# dump_all_roles
 
 # Declare_variables
 scriptName="postgresql-backup"
@@ -45,7 +46,8 @@ scriptConfigVersion=1.2
 cronFile="/etc/cron.d/$scriptName"
 
 # variable to pass postgres variables if set in config file
-postgresqlParams=""
+postgresqlParams_pg_dump=""
+postgresqlParams_pg_dumpall=""
 
 scriptDir="/usr/local/bash-scripts"
 
@@ -88,14 +90,17 @@ Usage:
   $SCRIPT_NAME  [OPTIONS] [PARAMETERS]
 
 Supported parameters:
-  -h | --help       Print usage informations
-  -V | --version    Print version of the script
-  -i INSTANCE_NAME  Set name to run multiple instances - eshop_cz | eshop_sk etc
+  -h | --help              Print usage informations
+  -V | --version           Print version of the script
+  -i INSTANCE_NAME         Set name to run multiple instances - eshop_cz | eshop_sk etc
+  --db-name DATABASE_NAME  Database name to backup
+                           it is not used by default and backups all databases
+                           if used, it will backup only this database
 
 Supported options:
-  -x               Bash debug output of the script - can be used with any other parameter
-  -d               Script debug output of logs - can be used with any other parameter
-  -v               Script verbose output of logs - can be used with any other option"
+  -x                       Bash debug output of the script - can be used with any other parameter
+  -d                       Script debug output of logs - can be used with any other parameter
+  -v                       Script verbose output of logs - can be used with any other option"
 }
 # _Usage
 
@@ -182,6 +187,14 @@ do
 
     LogWarning "Processing instance $instanceName"
     LogWarning "Defined alternative config file $configFile"
+  elif [ "$1" = "--db-name" ]
+  then
+    # load config file parameter
+    shift
+
+    databaseName="$1"
+
+    LogWarning "Processing only database $databaseName"
   # OPTIONS
   elif [ "$1" = "-x" ]
   then
@@ -210,7 +223,7 @@ if [ ! -e "$cronFile" ]
 then
   # create new cron file
   {
-    echo "# execute postgresql-backup daily - default instance"
+    echo "# execute $scriptName daily - default instance"
     echo "0 1 * * * root $sbinDir/$scriptName &>$outputFile"
   } > "$cronFile"
   RvLog "Created new cron file $cronFile for $scriptName"
@@ -274,14 +287,16 @@ fi
 if [ -n "$postgresqlPort" ]
 then
   LogInfo "Postgresql port set to $postgresqlPort"
-  postgresqlParams="$postgresqlParams -p $postgresqlPort"
+  postgresqlParams_pg_dump="$postgresqlParams_pg_dump -p $postgresqlPort"
+  postgresqlParams_pg_dumpall="$postgresqlParams_pg_dumpall -p $postgresqlPort"
 fi
 
 # if host is set in configuration, pass it to variable
 if [ -n "$postgresqlHost" ]
 then
   LogInfo "Postgresql host set to $postgresqlHost"
-  postgresqlParams="$postgresqlParams -h $postgresqlHost"
+  postgresqlParams_pg_dump="$postgresqlParams_pg_dump -h $postgresqlHost"
+  postgresqlParams_pg_dumpall="$postgresqlParams_pg_dumpall -h $postgresqlHost"
 fi
 
 # for sudo -u postgres change group of backupDir
@@ -299,9 +314,15 @@ fi
 #-w don't ask for password, PGPASSWORD must be set or $HOME/.pgpass file present
 #-At disable visual improvements of query result
 #-c command to execute
-backupARRAY=($(${postgresqlCommandPrefix}psql -U"$postgresqlUser" ${postgresqlParams} -w -At \
-  -c "select datname from pg_database where not datistemplate and datallowconn order by datname;"))
-RvLog "backupARRAY (${backupARRAY[@]}) loaded from postgresql"
+if [ -z "$databaseName" ]
+then
+  backupARRAY=($(${postgresqlCommandPrefix}psql -U"$postgresqlUser" ${postgresqlParams_pg_dump} -w -At \
+    -c "select datname from pg_database where not datistemplate and datallowconn order by datname;"))
+  RvLog "backupARRAY (${backupARRAY[@]}) loaded from postgresql"
+else
+  backupARRAY=($databaseName)
+  RvLog "backupARRAY (${backupARRAY[@]}) loaded from parameter"
+fi
 # Load_database_names
 
 # if count of cpus is set in configuration, pass it to variable
@@ -309,7 +330,7 @@ RvLog "backupARRAY (${backupARRAY[@]}) loaded from postgresql"
 if [ -n "$cpuCount" ]
 then
   LogInfo "Postgresql cpu count for pg_dump is set to $cpuCount"
-  postgresqlParams="$postgresqlParams --jobs=$cpuCount"
+  postgresqlParams_pg_dump="$postgresqlParams_pg_dump --jobs=$cpuCount"
 fi
 
 # dump_all_databases
@@ -327,7 +348,7 @@ do
   fi
   
   # bezne zalohovani bez vynechavani - vcetne pripadne databaze zabbixu
-  ${postgresqlCommandPrefix}pg_dump -U"$postgresqlUser" ${postgresqlParams} \
+  ${postgresqlCommandPrefix}pg_dump -U"$postgresqlUser" ${postgresqlParams_pg_dump} \
 		-w --dbname="$database" --format=directory --no-owner --file="$backupPath/$todayTime"
   RvLog "Created dump of postgresql database ($backupPath/$todayTime)"
   
@@ -341,6 +362,25 @@ do
   fi
 done
 # dump_all_databases
+
+# dump_all_roles
+# dumps all roles into postgres folder
+backupPath="$backupDir/roles/"
+CheckDir "$backupPath"
+
+${postgresqlCommandPrefix}pg_dumpall -U"$postgresqlUser" ${postgresqlParams_pg_dumpall} \
+		-w --globals-only --file="$backupPath/roles-$todayTime.sql"
+RvLog "Created dump of postgresql database ($backupPath/roles-$todayTime.sql)"
+  
+# check number of backups - to prevent deleting old backups in case of problems
+if [ "$(find "$backupPath" -maxdepth 1 -mindepth 1 -type f | wc -l)" -gt "$backupLimit" ]
+then
+  # remove old backups - keep $backupLimit only
+  find "$backupPath" -maxdepth 1 -mindepth 1 -type f -mtime +"$backupLimit" \
+    -exec rm -f {} \;
+  RvLog "Old backups removed from ($backupPath)"
+fi
+# dump_all_roles
 
 unset PGPASSWORD
 

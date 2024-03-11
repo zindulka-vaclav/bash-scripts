@@ -10,7 +10,7 @@ set -- "$@"
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=1
+VERSION_PATCH=2
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # Declare_variables
@@ -22,9 +22,8 @@ VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 # write_cron_file
 # load_config_file
 # process_variables
-
-# zajisti, ze pri selhani jednoho prikazu v pipe selze cela pipe
-set -o pipefail
+# dump_database
+# dump_all_roles
 
 # Declare_variables
 scriptName="postgresql-backup-one"
@@ -34,6 +33,7 @@ backupDir="/var/backup/postgresql"
 # how many backup days to keep
 backupLimit=14
 
+# date / date time for backup structure
 todayDate="$(date +%F)"
 todayTime="$(date +%H-%M)"
 
@@ -45,7 +45,8 @@ scriptConfigVersion=1.2
 cronFile="/etc/cron.d/$scriptName"
 
 # variable to pass postgres variables if set in config file
-postgresqlParams=""
+postgresqlParams_pg_dump=""
+postgresqlParams_pg_dumpall=""
 
 scriptDir="/usr/local/bash-scripts"
 
@@ -57,9 +58,10 @@ verbose=0
 #nacteni definice funkci Log,LogError,RvLog,StopProcessing z knihovny
 source $scriptDir/funkce	
 LogDebug "Sourced common script funkce"
-LogInfo "script ($scriptName) - zacatek"
+LogInfo "script ($scriptName) - start"
 echo "$$" > "$startFile"
 LogInfo "($startFile) set to ($$)"
+# Load_functions
 
 # Define_functions
 # _Usage
@@ -91,6 +93,7 @@ Supported parameters:
   -h | --help       Print usage informations
   -V | --version    Print version of the script
   -i INSTANCE_NAME  Set name to run multiple instances - eshop_cz | eshop_sk etc
+  --dump-roles      Dump all roles - only for superuser - don't use for normal user
 
 Supported options:
   -x               Bash debug output of the script - can be used with any other parameter
@@ -108,7 +111,7 @@ write_config(){
   enabled="false"
   postgresqlCommandPrefix=""
   postgresqlDatabase=""
-  postgresqlUser=""
+  postgresqlUser="postgres"
   postgresqlPassword=""
   postgresqlPort=""
   postgresqlHost=""
@@ -185,6 +188,10 @@ do
 
     LogWarning "Processing instance $instanceName"
     LogWarning "Defined alternative config file $configFile"
+  elif [ "$1" = "--dump-roles" ]
+  then
+    LogWarning "Detected parameter $1 for dumping all roles"
+    dumpRoles="true"
   # OPTIONS
   elif [ "$1" = "-x" ]
   then
@@ -279,14 +286,16 @@ fi
 if [ -n "$postgresqlPort" ]
 then
   LogInfo "Postgresql port set to $postgresqlPort"
-  postgresqlParams="$postgresqlParams -p $postgresqlPort"
+  postgresqlParams_pg_dump="$postgresqlParams_pg_dump -p $postgresqlPort"
+  postgresqlParams_pg_dumpall="$postgresqlParams_pg_dumpall -p $postgresqlPort"
 fi
 
 # if host is set in configuration, pass it to variable
 if [ -n "$postgresqlHost" ]
 then
   LogInfo "Postgresql host set to $postgresqlHost"
-  postgresqlParams="$postgresqlParams -h $postgresqlHost"
+  postgresqlParams_pg_dump="$postgresqlParams_pg_dump -h $postgresqlHost"
+  postgresqlParams_pg_dumpall="$postgresqlParams_pg_dumpall -h $postgresqlHost"
 fi
 
 # for sudo -u postgres change group of backupDir
@@ -304,7 +313,7 @@ fi
 if [ -n "$cpuCount" ]
 then
   LogInfo "Postgresql cpu count for pg_dump is set to $cpuCount"
-  postgresqlParams="$postgresqlParams --jobs=$cpuCount"
+  postgresqlParams_pg_dump="$postgresqlParams_pg_dump --jobs=$cpuCount"
 fi
 
 # dump_database
@@ -312,7 +321,7 @@ backupPath="$backupDir/$postgresqlDatabase/$todayDate"
 CheckDir "$backupPath"
 
 # bezne zalohovani bez vynechavani - vcetne pripadne databaze zabbixu
-${postgresqlCommandPrefix}pg_dump -U"$postgresqlUser" ${postgresqlParams} \
+${postgresqlCommandPrefix}pg_dump -U"$postgresqlUser" ${postgresqlParams_pg_dump} \
   -w --dbname="$postgresqlDatabase" --format=directory --no-owner --file="$backupPath/$todayTime"
 
 # nacte navratovou hodnotu - funkce RvLog ji vraci
@@ -334,6 +343,30 @@ else
   LogError "Problem creating postgresql backup ($backupPath/$todayTime)"
 fi
 # dump_database
+
+# dump_all_roles
+# dumps all roles into postgres folder
+if [ "$dumpRoles" = "true" ]
+then
+  backupPath="$backupDir/roles/"
+  CheckDir "$backupPath"
+
+  ${postgresqlCommandPrefix}pg_dumpall -U"$postgresqlUser" ${postgresqlParams_pg_dumpall} \
+      -w --globals-only --file="$backupPath/roles-$todayTime.sql"
+  RvLog "Created dump of postgresql database ($backupPath/roles-$todayTime.sql)"
+    
+  # check number of backups - to prevent deleting old backups in case of problems
+  if [ "$(find "$backupPath" -maxdepth 1 -mindepth 1 -type f | wc -l)" -gt "$backupLimit" ]
+  then
+    # remove old backups - keep $backupLimit only
+    find "$backupPath" -maxdepth 1 -mindepth 1 -type f -mtime +"$backupLimit" \
+      -exec rm -f {} \;
+    RvLog "Old backups removed from ($backupPath)"
+  fi
+else
+  LogInfo "Dumping all roles is disabled"
+fi
+# dump_all_roles
 
 unset PGPASSWORD
 
