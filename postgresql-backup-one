@@ -93,6 +93,7 @@ Supported parameters:
   -h | --help       Print usage informations
   -V | --version    Print version of the script
   -i INSTANCE_NAME  Set name to run multiple instances - eshop_cz | eshop_sk etc
+  --dump-roles      Dump all roles - only for superuser - don't use for normal user
 
 Supported options:
   -x               Bash debug output of the script - can be used with any other parameter
@@ -187,6 +188,10 @@ do
 
     LogWarning "Processing instance $instanceName"
     LogWarning "Defined alternative config file $configFile"
+  elif [ "$1" = "--dump-roles" ]
+  then
+    LogWarning "Detected parameter $1 for dumping all roles"
+    dumpRoles="true"
   # OPTIONS
   elif [ "$1" = "-x" ]
   then
@@ -341,20 +346,25 @@ fi
 
 # dump_all_roles
 # dumps all roles into postgres folder
-backupPath="$backupDir/roles/"
-CheckDir "$backupPath"
-
-${postgresqlCommandPrefix}pg_dumpall -U"$postgresqlUser" ${postgresqlParams_pg_dumpall} \
-		-w --globals-only --file="$backupPath/roles-$todayTime.sql"
-RvLog "Created dump of postgresql database ($backupPath/roles-$todayTime.sql)"
-  
-# check number of backups - to prevent deleting old backups in case of problems
-if [ "$(find "$backupPath" -maxdepth 1 -mindepth 1 -type f | wc -l)" -gt "$backupLimit" ]
+if [ "$dumpRoles" = "true" ]
 then
-  # remove old backups - keep $backupLimit only
-  find "$backupPath" -maxdepth 1 -mindepth 1 -type f -mtime +"$backupLimit" \
-    -exec rm -f {} \;
-  RvLog "Old backups removed from ($backupPath)"
+  backupPath="$backupDir/roles/"
+  CheckDir "$backupPath"
+
+  ${postgresqlCommandPrefix}pg_dumpall -U"$postgresqlUser" ${postgresqlParams_pg_dumpall} \
+      -w --globals-only --file="$backupPath/roles-$todayTime.sql"
+  RvLog "Created dump of postgresql database ($backupPath/roles-$todayTime.sql)"
+    
+  # check number of backups - to prevent deleting old backups in case of problems
+  if [ "$(find "$backupPath" -maxdepth 1 -mindepth 1 -type f | wc -l)" -gt "$backupLimit" ]
+  then
+    # remove old backups - keep $backupLimit only
+    find "$backupPath" -maxdepth 1 -mindepth 1 -type f -mtime +"$backupLimit" \
+      -exec rm -f {} \;
+    RvLog "Old backups removed from ($backupPath)"
+  fi
+else
+  LogInfo "Dumping all roles is disabled"
 fi
 # dump_all_roles
 
