@@ -10,7 +10,7 @@ set -- "$@"
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=1
+VERSION_PATCH=2
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # Declare_variables
@@ -22,9 +22,8 @@ VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 # write_cron_file
 # load_config_file
 # process_variables
-
-# zajisti, ze pri selhani jednoho prikazu v pipe selze cela pipe
-set -o pipefail
+# dump_database
+# dump_all_roles
 
 # Declare_variables
 scriptName="postgresql-backup-one"
@@ -34,6 +33,7 @@ backupDir="/var/backup/postgresql"
 # how many backup days to keep
 backupLimit=14
 
+# date / date time for backup structure
 todayDate="$(date +%F)"
 todayTime="$(date +%H-%M)"
 
@@ -57,9 +57,10 @@ verbose=0
 #nacteni definice funkci Log,LogError,RvLog,StopProcessing z knihovny
 source $scriptDir/funkce	
 LogDebug "Sourced common script funkce"
-LogInfo "script ($scriptName) - zacatek"
+LogInfo "script ($scriptName) - start"
 echo "$$" > "$startFile"
 LogInfo "($startFile) set to ($$)"
+# Load_functions
 
 # Define_functions
 # _Usage
@@ -108,7 +109,7 @@ write_config(){
   enabled="false"
   postgresqlCommandPrefix=""
   postgresqlDatabase=""
-  postgresqlUser=""
+  postgresqlUser="postgres"
   postgresqlPassword=""
   postgresqlPort=""
   postgresqlHost=""
@@ -334,6 +335,25 @@ else
   LogError "Problem creating postgresql backup ($backupPath/$todayTime)"
 fi
 # dump_database
+
+# dump_all_roles
+# dumps all roles into postgres folder
+backupPath="$backupDir/roles/"
+CheckDir "$backupPath"
+
+${postgresqlCommandPrefix}pg_dumpall -U"$postgresqlUser" ${postgresqlParams} \
+		-w --globals-only --file="$backupPath/roles-$todayTime.sql"
+RvLog "Created dump of postgresql database ($backupPath/roles-$todayTime.sql)"
+  
+# check number of backups - to prevent deleting old backups in case of problems
+if [ "$(find "$backupPath" -maxdepth 1 -mindepth 1 -type f | wc -l)" -gt "$backupLimit" ]
+then
+  # remove old backups - keep $backupLimit only
+  find "$backupPath" -maxdepth 1 -mindepth 1 -type f -mtime +"$backupLimit" \
+    -exec rm -f {} \;
+  RvLog "Old backups removed from ($backupPath)"
+fi
+# dump_all_roles
 
 unset PGPASSWORD
 

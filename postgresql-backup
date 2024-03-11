@@ -10,7 +10,7 @@ set -- "$@"
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=8
+VERSION_PATCH=9
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # Declare_variables
@@ -24,6 +24,7 @@ VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 # process_variables
 # Load_database_names
 # dump_all_databases
+# dump_all_roles
 
 # Declare_variables
 scriptName="postgresql-backup"
@@ -210,7 +211,7 @@ if [ ! -e "$cronFile" ]
 then
   # create new cron file
   {
-    echo "# execute postgresql-backup daily - default instance"
+    echo "# execute $scriptName daily - default instance"
     echo "0 1 * * * root $sbinDir/$scriptName &>$outputFile"
   } > "$cronFile"
   RvLog "Created new cron file $cronFile for $scriptName"
@@ -341,6 +342,25 @@ do
   fi
 done
 # dump_all_databases
+
+# dump_all_roles
+# dumps all roles into postgres folder
+backupPath="$backupDir/roles/"
+CheckDir "$backupPath"
+
+${postgresqlCommandPrefix}pg_dumpall -U"$postgresqlUser" ${postgresqlParams} \
+		-w --globals-only --file="$backupPath/roles-$todayTime.sql"
+RvLog "Created dump of postgresql database ($backupPath/roles-$todayTime.sql)"
+  
+# check number of backups - to prevent deleting old backups in case of problems
+if [ "$(find "$backupPath" -maxdepth 1 -mindepth 1 -type f | wc -l)" -gt "$backupLimit" ]
+then
+  # remove old backups - keep $backupLimit only
+  find "$backupPath" -maxdepth 1 -mindepth 1 -type f -mtime +"$backupLimit" \
+    -exec rm -f {} \;
+  RvLog "Old backups removed from ($backupPath)"
+fi
+# dump_all_roles
 
 unset PGPASSWORD
 
