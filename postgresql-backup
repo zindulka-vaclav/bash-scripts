@@ -46,7 +46,8 @@ scriptConfigVersion=1.2
 cronFile="/etc/cron.d/$scriptName"
 
 # variable to pass postgres variables if set in config file
-postgresqlParams=""
+postgresqlParams_pg_dump=""
+postgresqlParams_pg_dumpall=""
 
 scriptDir="/usr/local/bash-scripts"
 
@@ -286,14 +287,16 @@ fi
 if [ -n "$postgresqlPort" ]
 then
   LogInfo "Postgresql port set to $postgresqlPort"
-  postgresqlParams="$postgresqlParams -p $postgresqlPort"
+  postgresqlParams_pg_dump="$postgresqlParams_pg_dump -p $postgresqlPort"
+  postgresqlParams_pg_dumpall="$postgresqlParams_pg_dumpall -p $postgresqlPort"
 fi
 
 # if host is set in configuration, pass it to variable
 if [ -n "$postgresqlHost" ]
 then
   LogInfo "Postgresql host set to $postgresqlHost"
-  postgresqlParams="$postgresqlParams -h $postgresqlHost"
+  postgresqlParams_pg_dump="$postgresqlParams_pg_dump -h $postgresqlHost"
+  postgresqlParams_pg_dumpall="$postgresqlParams_pg_dumpall -h $postgresqlHost"
 fi
 
 # for sudo -u postgres change group of backupDir
@@ -313,7 +316,7 @@ fi
 #-c command to execute
 if [ -z "$databaseName" ]
 then
-  backupARRAY=($(${postgresqlCommandPrefix}psql -U"$postgresqlUser" ${postgresqlParams} -w -At \
+  backupARRAY=($(${postgresqlCommandPrefix}psql -U"$postgresqlUser" ${postgresqlParams_pg_dump} -w -At \
     -c "select datname from pg_database where not datistemplate and datallowconn order by datname;"))
   RvLog "backupARRAY (${backupARRAY[@]}) loaded from postgresql"
 else
@@ -327,7 +330,7 @@ fi
 if [ -n "$cpuCount" ]
 then
   LogInfo "Postgresql cpu count for pg_dump is set to $cpuCount"
-  postgresqlParams="$postgresqlParams --jobs=$cpuCount"
+  postgresqlParams_pg_dump="$postgresqlParams_pg_dump --jobs=$cpuCount"
 fi
 
 # dump_all_databases
@@ -345,7 +348,7 @@ do
   fi
   
   # bezne zalohovani bez vynechavani - vcetne pripadne databaze zabbixu
-  ${postgresqlCommandPrefix}pg_dump -U"$postgresqlUser" ${postgresqlParams} \
+  ${postgresqlCommandPrefix}pg_dump -U"$postgresqlUser" ${postgresqlParams_pg_dump} \
 		-w --dbname="$database" --format=directory --no-owner --file="$backupPath/$todayTime"
   RvLog "Created dump of postgresql database ($backupPath/$todayTime)"
   
@@ -365,7 +368,7 @@ done
 backupPath="$backupDir/roles/"
 CheckDir "$backupPath"
 
-${postgresqlCommandPrefix}pg_dumpall -U"$postgresqlUser" ${postgresqlParams} \
+${postgresqlCommandPrefix}pg_dumpall -U"$postgresqlUser" ${postgresqlParams_pg_dumpall} \
 		-w --globals-only --file="$backupPath/roles-$todayTime.sql"
 RvLog "Created dump of postgresql database ($backupPath/roles-$todayTime.sql)"
   
