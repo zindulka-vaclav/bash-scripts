@@ -89,16 +89,17 @@ Usage:
   $SCRIPT_NAME  [OPTIONS] [PARAMETERS]
 
 Supported parameters:
-  -h | --help       Print usage informations
-  -V | --version    Print version of the script
-  -i INSTANCE_NAME  Set name to run multiple instances - eshop_cz | eshop_sk etc
-  --db-name         Database name to backup - it is not used by default and backups all databases
-                    if set, it will backup only this database
+  -h | --help              Print usage informations
+  -V | --version           Print version of the script
+  -i INSTANCE_NAME         Set name to run multiple instances - eshop_cz | eshop_sk etc
+  --db-name DATABASE_NAME  Database name to backup
+                           it is not used by default and backups all databases
+                           if used, it will backup only this database
 
 Supported options:
-  -x               Bash debug output of the script - can be used with any other parameter
-  -d               Script debug output of logs - can be used with any other parameter
-  -v               Script verbose output of logs - can be used with any other option"
+  -x                       Bash debug output of the script - can be used with any other parameter
+  -d                       Script debug output of logs - can be used with any other parameter
+  -v                       Script verbose output of logs - can be used with any other option"
 }
 # _Usage
 
