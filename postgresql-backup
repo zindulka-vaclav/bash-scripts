@@ -92,6 +92,8 @@ Supported parameters:
   -h | --help       Print usage informations
   -V | --version    Print version of the script
   -i INSTANCE_NAME  Set name to run multiple instances - eshop_cz | eshop_sk etc
+  --db-name         Database name to backup - it is not used by default and backups all databases
+                    if set, it will backup only this database
 
 Supported options:
   -x               Bash debug output of the script - can be used with any other parameter
@@ -183,6 +185,14 @@ do
 
     LogWarning "Processing instance $instanceName"
     LogWarning "Defined alternative config file $configFile"
+  elif [ "$1" = "--db-name" ]
+  then
+    # load config file parameter
+    shift
+
+    databaseName="$1"
+
+    LogWarning "Processing only database $databaseName"
   # OPTIONS
   elif [ "$1" = "-x" ]
   then
@@ -300,9 +310,15 @@ fi
 #-w don't ask for password, PGPASSWORD must be set or $HOME/.pgpass file present
 #-At disable visual improvements of query result
 #-c command to execute
-backupARRAY=($(${postgresqlCommandPrefix}psql -U"$postgresqlUser" ${postgresqlParams} -w -At \
-  -c "select datname from pg_database where not datistemplate and datallowconn order by datname;"))
-RvLog "backupARRAY (${backupARRAY[@]}) loaded from postgresql"
+if [ -z "$databaseName" ]
+then
+  backupARRAY=($(${postgresqlCommandPrefix}psql -U"$postgresqlUser" ${postgresqlParams} -w -At \
+    -c "select datname from pg_database where not datistemplate and datallowconn order by datname;"))
+  RvLog "backupARRAY (${backupARRAY[@]}) loaded from postgresql"
+else
+  backupARRAY=($databaseName)
+  RvLog "backupARRAY (${backupARRAY[@]}) loaded from parameter"
+fi
 # Load_database_names
 
 # if count of cpus is set in configuration, pass it to variable
