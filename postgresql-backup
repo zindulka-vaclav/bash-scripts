@@ -340,9 +340,6 @@ fi
 #provede dumpy vsech existujicich databazi
 for database in ${backupARRAY[@]}
 do
-  backupPath="$backupDir/$database/$todayDate"
-  CheckDir "$backupPath"
-  
   # don't process ignored databases
   for ignoredDatabase in ${ignoredDatabases}
   do
@@ -352,6 +349,9 @@ do
       continue 2
     fi
   done
+  
+  backupPath="$backupDir/$database/$todayDate"
+  CheckDir "$backupPath"
   
   # bezne zalohovani bez vynechavani - vcetne pripadne databaze zabbixu
   ${postgresqlCommandPrefix}pg_dump -U"$postgresqlUser" ${postgresqlParams_pg_dump} \
