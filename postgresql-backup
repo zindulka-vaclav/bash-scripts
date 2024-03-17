@@ -349,7 +349,7 @@ do
     if [[ "$database" = "$ignoredDatabase" ]]
     then
       LogWarning "Skipped dump of ignored database $database"
-      continue
+      continue 2
     fi
   done
   
