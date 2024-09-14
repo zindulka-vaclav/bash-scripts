@@ -3,7 +3,7 @@
 # mount command is defined in config file
 
 # set pipes to fail after first error, preserving last return value of failed process
-set -euo pipefail
+set -eo pipefail
 
 # set all parameters passed during execution of the script as single parameters
 set -- "$@"
@@ -111,29 +111,27 @@ write_config() {
 
 # Process_parameters
 while [ "$#" -gt 0 ]; do
-  parameter="${1:-UNDEFINED}"
-
   # PARAMETERS
   # print version and exit
-  if [ "$parameter" = "-V" ] || [ "$parameter" = "--version" ]; then
+  if [ "$1" = "-V" ] || [ "$1" = "--version" ]; then
     echo "$VERSION"
     exit 0
     # print help and exit
-  elif [ "$parameter" = "-h" ] || [ "$parameter" = "--help" ]; then
+  elif [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
     Usage
     exit 0
   # OPTIONS
-  elif [ "$parameter" = "-x" ]; then
-    LogWarning "Detected parameter $parameter for bash debug output of the script"
+  elif [ "$1" = "-x" ]; then
+    LogWarning "Detected parameter $1 for bash debug output of the script"
     set -x
-  elif [ "$parameter" = "-d" ]; then
-    LogWarning "Detected parameter $parameter for debug output of log messages"
+  elif [ "$1" = "-d" ]; then
+    LogWarning "Detected parameter $1 for debug output of log messages"
     DEBUG_OUTPUT="true"
-  elif [ "$parameter" = "-v" ]; then
-    LogWarning "Detected parameter $parameter for verbose output of log messages"
+  elif [ "$1" = "-v" ]; then
+    LogWarning "Detected parameter $1 for verbose output of log messages"
     verbose=1
-  elif [ "$parameter" != "UNDEFINED" ]; then
-    LogError "Unknown parameter detected: $parameter"
+  else
+    LogError "Unknown parameter detected: $1"
     Usage
     exit 1
   fi
