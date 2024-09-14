@@ -1,0 +1,242 @@
+#!/bin/bash
+#rsync-synchronization - provadi synchronizaci obashu slozek pomoci rsyncu.
+
+# set pipes to fail after first error, preserving last return value of failed process
+set -eo pipefail
+
+# set all parameters passed during execution of the script as single parameters
+set -- "$@"
+
+VERSION_MAJOR=1
+VERSION_MINOR=0
+VERSION_PATCH=0
+VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
+
+# Declare_variables
+# functions_Usage
+# functions_write_config
+# process_parameters
+# write_cron_file
+# load_config_file
+
+# declare_variables
+scriptName="rsync-backup"
+
+# --delete, --backup-dir can't be set this way and must be on the command line
+rsyncOptions="-rltgoDAuv"
+
+listFile="_rsync.list"
+
+scriptDir="/usr/local/bash-scripts"
+
+scriptConfigVersion="1.0"
+
+verbose=0
+# declare_variables
+
+#_LOGOVANI
+
+#nacteni definice funkci Log,LogError,RvLog,StopProcessing z knihovny
+# Load_functions
+# load definition of functions LogInfo, LogWarning, LogError,
+# RvLog, StopProcessing z knihovny
+source "${scriptDir}/funkce"
+LogDebug "Sourced common script funkce"
+LogInfo "script (${scriptName}) - start"
+echo "$$" >"${startFile}"
+LogInfo "(${startFile}) set to ($$)"
+
+# Define_functions
+# functions_Usage
+# print usage of script
+Usage() {
+  echo -e "Usage: $scriptName [-h] [-V] [-x] [-d] [-v]
+  -h, --help      print this help and exit
+  -V, --version   print version and exit
+  -x              enable bash debug output
+  -d              enable debug output of log messages
+  -v              enable verbose output of log messages
+  
+  Script for synchronization of files and directories using rsync.
+  It synchronizes each directory from the list with the backup directory."
+}
+# functions_Usage
+
+# functions_write_config
+# write new config file / update from old one
+write_config() {
+  configVersion="${scriptConfigVersion}"
+  enabled="false"
+  listOfFolders=()
+  nfsMountPoint="/mnt/backup"
+  nfsMountShare=""
+
+  if [ -f "$configFile" ]; then
+    cp "$configFile" "${configFile}.back"
+    RvLog "provedena zaloha konfigurace do (${configFile}.back)"
+    source "${configFile}.back"
+
+    # replace config version with script version to update config file
+    configVersion="${scriptConfigVersion}"
+  fi
+
+  {
+    echo "# config version - checked by the script - for automatic config update"
+    echo "configVersion=\"${configVersion}\""
+    echo "# enable (true) / disable (false) execution of the script"
+    echo "enabled=\"${enabled}\""
+    echo "# list of folders and files for synchronization separated by space"
+    echo "# at the beginning must be always / and never at the end"
+    echo "listOfFolders=(${listOfFolders[@]})"
+    echo "# nfs mount point - target folder where the backup disk is mounted - without / at the end"
+    echo "nfsMountPoint=\"$nfsMountPoint\""
+    echo "# nfs mount share - hostname or IP address and name of share - without / at the end"
+    echo "# example: nfsMountShare=\"192.168.111.1:/home/backup\""
+    echo "nfsMountShare=\"$nfsMountShare\""
+  } >"$configFile"
+  LogError "zapsan konfiguracni soubor pro server ($HOSTNAME)"
+}
+# functions_write_config
+
+# process_parameters
+while [ "$#" -gt 0 ]; do
+  # PARAMETERS
+  # print version and exit
+  if [ "$1" = "-V" ] || [ "$1" = "--version" ]; then
+    echo "${VERSION}"
+    exit 0
+    # print help and exit
+  elif [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    Usage
+    exit 0
+  # OPTIONS
+  elif [ "$1" = "-x" ]; then
+    LogWarning "Detected parameter $1 for bash debug output of the script"
+    set -x
+  elif [ "$1" = "-d" ]; then
+    LogWarning "Detected parameter $1 for debug output of log messages"
+    DEBUG_OUTPUT="true"
+  elif [ "$1" = "-v" ]; then
+    LogWarning "Detected parameter $1 for verbose output of log messages"
+    verbose=1
+  else
+    LogError "Unknown parameter detected: $1"
+    Usage
+    exit 1
+  fi
+
+  shift
+done
+# process_parameters
+
+# write_cron_file
+if [ ! -e "${cronFile}" ]; then
+  # create new cron file
+  {
+    echo "# execute ${scriptName} daily - default instance"
+    echo "0 2 * * * root ${sbinDir}/${scriptName} &>${outputFile}"
+  } >"${cronFile}"
+  RvLog "Created new cron file ${cronFile} for ${scriptName}"
+fi
+# write_cron_file
+
+# load_config_file
+# load variables from config file
+if [ -f "${configFile}" ]; then
+  source "${configFile}"
+  LogInfo "Successfully loaded config file (${configFile})"
+
+  # check script and config version
+  if [ "${scriptConfigVersion}" != "${configVersion}" ]; then
+    LogError "Config version (${configVersion}) and script version (${scriptConfigVersion}) missmatch"
+    write_config
+    StopProcessing
+    exit 2
+  fi
+else
+  write_config
+  source "${configFile}"
+fi
+# load_config_file
+
+# check config - stop on disabled execution
+if [ "${enabled}" = "false" ]; then
+  LogInfo "Script (${scriptName}) is disabled in config file (${configFile})"
+  StopProcessing
+  exit 1
+fi
+
+# process_variables
+if [ -z "${listOfFolders}" ]; then
+  LogError "List of folders for synchronization is empty"
+  StopProcessing
+  exit 2
+fi
+
+if [ -z "${nfsMountPoint}" ] || [ -z "${nfsMountShare}" ]; then
+  LogError "NFS mount point or share is not set"
+  StopProcessing
+  exit 3
+fi
+# process_variables
+
+# umount the share if it is still mounted
+if [ "$(mount | grep -c $nfsMountShare)" -ne 0 ]; then
+  LogError "zustal viset ($nfsMountShare)"
+  umount -l -f "$nfsMountPoint"
+  RvLog "umount oddilu ($nfsMountShare) z ($nfsMountPoint)"
+fi
+
+# mount the share
+LogInfo "pripojeni ($nfsMountShare) na ($nfsMountPoint)"
+mount -t nfs "$nfsMountShare" "$nfsMountPoint"
+RvLog "pripojeni oddilu ($nfsMountShare) na ($nfsMountPoint)"
+if [ "$?" -ne 0 ]; then
+  LogError "Nepodarilo se pripojit oddil ($nfsMountShare) na ($nfsMountPoint), koncime"
+  StopProcessing
+  exit 5
+else
+  LogInfo "uspesne pripojen ($nfsMountShare) na ($nfsMountPoint)"
+fi
+
+# start synchronization
+for syncFolder in "${listOfFolders[@]}"; do
+  baseSyncFolder="$(basename "${syncFolder}")"
+  targetSyncFolder="${nfsMountPoint}/${baseSyncFolder}"
+  CheckDir "${targetSyncFolder}"
+
+  LogInfo "Synchronizing folder ${syncFolder} with backup folder ${targetSyncFolder}"
+
+  LogInfo "rsync - spusteni zalohy ($syncFolder) do ($targetSyncFolder)"
+  if [ "$verbose" -eq 1 ]; then
+    rsync -e "ssh -o StrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null" "$rsyncOptions" \
+      --delete --bwlimit=32000 "$syncFolder" "$targetSyncFolder"
+
+    if [ "$?" -ne 0 ]; then
+      LogError "rsync - ($syncFolder) do ($targetSyncFolder) skoncil s chybou"
+    else
+      LogInfo "rsync - ($syncFolder) do ($targetSyncFolder) dokonceno"
+    fi
+  else
+    rsync -e "ssh -o StrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null" "$rsyncOptions" \
+      --delete --bwlimit=32000 "$syncFolder" "$targetSyncFolder" >/dev/null
+
+    if [ "$?" -ne 0 ]; then
+      LogError "rsync - ($syncFolder) do ($targetSyncFolder) skoncil s chybou"
+    else
+      LogInfo "rsync - ($syncFolder) do ($targetSyncFolder) dokonceno"
+    fi
+  fi
+done
+
+#provede zapsani zmen na disky
+sync
+RvLog "sync disku"
+
+LogInfo "odpojeni nfs oddilu ($nfsMountShare)"
+umount -l -f "$nfsMountPoint"
+RvLog "umount ($nfsMountPoint)"
+
+StopProcessing
+LogInfo "OK - ($scriptName) zalohovani dokonceno"
+exit 0
