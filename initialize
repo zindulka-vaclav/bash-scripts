@@ -18,6 +18,18 @@ scriptDir="/usr/local/bash-scripts"
 verbose=0
 DEBUG_OUTPUT="false"
 
+#_LOGOVANI
+# nacteni konfiguracniho souboru s funkcemi
+source "$scriptDir/funkce"
+
+CheckDir "$pidDir"
+CheckDir "$logDir"
+
+LogInfo "Start of script $scriptName"
+
+echo "$$" >"$startFile"
+RvLog "start file set to ($$)"
+
 # Process_parameters
 while [ "$#" -gt 0 ]; do
   # PARAMETERS
@@ -48,18 +60,6 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 # Process_parameters
-
-#_LOGOVANI
-# nacteni konfiguracniho souboru s funkcemi
-source "$scriptDir/funkce"
-
-CheckDir "$pidDir"
-CheckDir "$logDir"
-
-LogInfo "Start of script $scriptName"
-
-echo "$$" >"$startFile"
-RvLog "start file set to ($$)"
 
 # write_cron_file
 if [ ! -e "$cronFile" ]; then
