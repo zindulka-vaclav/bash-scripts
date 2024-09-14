@@ -9,7 +9,7 @@ set -- "$@"
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=0
+VERSION_PATCH=1
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # Declare_variables
@@ -20,12 +20,10 @@ VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 # load_config_file
 
 # declare_variables
-scriptName="rsync-backup"
+scriptName="rsync-synchronization"
 
 # --delete, --backup-dir can't be set this way and must be on the command line
 rsyncOptions="-rltgoDAuv"
-
-listFile="_rsync.list"
 
 scriptDir="/usr/local/bash-scripts"
 
@@ -148,7 +146,7 @@ if [ -f "${configFile}" ]; then
 
   # check script and config version
   if [ "${scriptConfigVersion}" != "${configVersion}" ]; then
-    LogError "Config version (${configVersion}) and script version (${scriptConfigVersion}) missmatch"
+    LogError "Config version (${configVersion}) and script version (${scriptConfigVersion}) mismatch"
     write_config
     StopProcessing
     exit 2
