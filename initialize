@@ -4,7 +4,7 @@ set -eo pipefail
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=5
+VERSION_PATCH=6
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 #inicializacni script pro nahrani a nastaveni rsync stahovani na server
@@ -49,25 +49,6 @@ while [ "$#" -gt 0 ]; do
 done
 # Process_parameters
 
-#spousti se pouze pod rootem
-if [ "$UID" -eq 0 ]; then
-  # pokud jeste neexistuje slozka se scripty, provede klonovani repozitare
-  if [ ! -d "$scriptDir" ]; then
-    # clone repository if it doesn't exists
-    git clone https://gitlab.com/zindulka.vaclav/bash-scripts.git "$scriptDir"
-    echo "Bash scripts repository cloned from gitlab"
-  # pokud uz slozka existuje, prepne se do ni a udela pull
-  else
-    cd "$scriptDir" || exit 2
-    git checkout -f master && git pull || exit 2
-    echo "Git repository updated from master"
-    cd - || exit 2
-  fi
-else
-  echo "Error - script has to be executed as root"
-  exit 1
-fi
-
 #_LOGOVANI
 # nacteni konfiguracniho souboru s funkcemi
 source "$scriptDir/funkce"
@@ -92,6 +73,25 @@ else
   echo "Cron file exists"
 fi
 # write_cron_file
+
+#spousti se pouze pod rootem
+if [ "$UID" -eq 0 ]; then
+  # pokud jeste neexistuje slozka se scripty, provede klonovani repozitare
+  if [ ! -d "$scriptDir" ]; then
+    # clone repository if it doesn't exists
+    git clone https://gitlab.com/zindulka.vaclav/bash-scripts.git "$scriptDir"
+    echo "Bash scripts repository cloned from gitlab"
+  # pokud uz slozka existuje, prepne se do ni a udela pull
+  else
+    cd "$scriptDir" || exit 2
+    git checkout -f master && git pull || exit 2
+    echo "Git repository updated from master"
+    cd - || exit 2
+  fi
+else
+  echo "Error - script has to be executed as root"
+  exit 1
+fi
 
 # set configDir permissions to 600 to prevent other users from reading it
 chmod -R 600 "$configDir"
