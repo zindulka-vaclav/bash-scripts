@@ -98,7 +98,7 @@ write_config() {
 
 # process_parameters
 while [ "$#" -gt 0 ]; do
-  parameter="${1:UNDEFINED}"
+  parameter="${1:-UNDEFINED}"
 
   # PARAMETERS
   # print version and exit

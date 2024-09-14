@@ -20,7 +20,7 @@ DEBUG_OUTPUT="false"
 
 # Process_parameters
 while [ "$#" -gt 0 ]; do
-  parameter="${1:UNDEFINED}"
+  parameter="${1:-UNDEFINED}"
 
   # PARAMETERS
   # print version and exit

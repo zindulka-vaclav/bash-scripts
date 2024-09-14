@@ -144,7 +144,7 @@ write_config() {
 
 # Process_parameters
 while [ "$#" -gt 0 ]; do
-  parameter="${1:UNDEFINED}"
+  parameter="${1:-UNDEFINED}"
 
   # PARAMETERS
   # print version and exit
@@ -160,7 +160,7 @@ while [ "$#" -gt 0 ]; do
     # load config file parameter
     shift
 
-    nextParameter="${1:UNDEFINED}"
+    nextParameter="${1:-UNDEFINED}"
 
     if [ "$nextParameter" = "UNDEFINED" ]; then
       LogError "Instance name parameter is empty"
