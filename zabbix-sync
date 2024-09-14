@@ -219,6 +219,10 @@ else
 fi
 # _zaloha_ostre_databaze
 
+# TODO: this section was modified by formatter and I'm not sure if it's correct
+echo "THIS SECTION NEEDS TO BE CHECKED"
+exit 1
+
 # _stazeni_zalohy_ostre_databaze
 # stahne zalohu databaze a pred dropem provede restart postgresql, protoze kdyz
 # zustanou navazane connectiony, nelze databazi dropnout
