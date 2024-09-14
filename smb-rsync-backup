@@ -23,21 +23,19 @@ VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 scriptName="smb-rsync-backup"
 
 #dnesni datum ve formatu YYYY-MM-DD
-todayDate="$(date +%F)"	
+todayDate="$(date +%F)"
 
 #cesta ke scriptu
 scriptDir="/usr/local/bash-scripts"
 scriptConfigVersion=1.1
-cronFile="/etc/cron.d/$scriptName"
 verbose=0
 # Declare_variables
 
-
 # Load_functions
-. $scriptDir/funkce	
+. $scriptDir/funkce
 LogDebug "Sourced common script funkce"
 LogInfo "script ($scriptName) - zacatek"
-echo "$$" > "${startFile:UNDEFINED}"
+echo "$$" >"${startFile:UNDEFINED}"
 LogInfo "($startFile) set to ($$)"
 # Load_functions
 
@@ -64,7 +62,7 @@ Supported options:
 
 # _write_config
 # write new config file / update from old one
-write_config(){
+write_config() {
 
   # default values for variables - updated in case of existing file
   configVersion="$scriptConfigVersion"
@@ -72,10 +70,9 @@ write_config(){
   mountCommand="mount -t cifs -o username=,password=,rw //server/share /path/to/mount"
   backupList="/path/to/backup1 /path/to/backup2"
   backupTarget="/path/to/backup/target"
-  
+
   # if config file exists, create backup and source it to preserve values
-  if [ -f "$configFile" ]
-  then
+  if [ -f "$configFile" ]; then
     cp "$configFile" "${configFile}.back"
     RvLog "Created backup of old config file (${configFile}.back)"
     source "${configFile}.back"
@@ -83,7 +80,7 @@ write_config(){
     # replace config version with script version to update config file
     configVersion="$scriptConfigVersion"
   fi
-  
+
   {
     echo "# config version - checked by the script - for automatic config update"
     echo "configVersion=\"$configVersion\""
@@ -100,38 +97,32 @@ write_config(){
     echo "backupList=\"$backupList\""
     echo "# target directory for backups - without trailing slash"
     echo "backupTarget=$backupTarget"
-  } > "$configFile"
-	chmod 600 "$configFile"
+  } >"$configFile"
+  chmod 600 "$configFile"
   LogError "Config file $configFile written on ($HOSTNAME)"
 }
 # _write_config
 # Define_functions
 
 # Process_parameters
-while [ "$#" -gt 0 ]
-do
+while [ "$#" -gt 0 ]; do
   # PARAMETERS
   # print version and exit
-  if [ "$1" = "-V" ] || [ "$1" = "--version" ]
-  then
+  if [ "$1" = "-V" ] || [ "$1" = "--version" ]; then
     echo "$VERSION"
     exit 0
     # print help and exit
-  elif [ "$1" = "-h" ] || [ "$1" = "--help" ]
-  then
+  elif [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
     Usage
     exit 0
   # OPTIONS
-  elif [ "$1" = "-x" ]
-  then
+  elif [ "$1" = "-x" ]; then
     LogWarning "Detected parameter $1 for bash debug output of the script"
     set -x
-  elif [ "$1" = "-d" ]
-  then
+  elif [ "$1" = "-d" ]; then
     LogWarning "Detected parameter $1 for debug output of log messages"
     DEBUG_OUTPUT="true"
-  elif [ "$1" = "-v" ]
-  then
+  elif [ "$1" = "-v" ]; then
     LogWarning "Detected parameter $1 for verbose output of log messages"
     verbose=1
   else
@@ -139,31 +130,27 @@ do
     Usage
     exit 1
   fi
-  
+
   shift
 done
 # Process_parameters
 
-if [ ! -e /etc/cron.d/smb-rsync-backup ]
-then
-	{ 
-		echo "# daily execution of smb-rsync-backup"
-		echo "0 4 * * * root $sbinDir/smb-rsync-backup &>$outputFile"
-	} > /etc/cron.d/smb-rsync-backup
-	RvLog "Created cron file (/etc/cron.d/smb-rsync-backup)"
+if [ ! -e /etc/cron.d/smb-rsync-backup ]; then
+  {
+    echo "# daily execution of smb-rsync-backup"
+    echo "0 4 * * * root $sbinDir/smb-rsync-backup &>$outputFile"
+  } >/etc/cron.d/smb-rsync-backup
+  RvLog "Created cron file (/etc/cron.d/smb-rsync-backup)"
 fi
-
 
 # load_config_file
 # load variables from config file
-if [ -f "$configFile" ]
-then
+if [ -f "$configFile" ]; then
   source "$configFile"
   LogInfo "Successfully loaded config file ($configFile)"
 
   # check script and config version
-  if [ "$scriptConfigVersion" != "$configVersion" ]
-  then
+  if [ "$scriptConfigVersion" != "$configVersion" ]; then
     LogError "Config version ($configVersion) and script version ($scriptConfigVersion) missmatch"
     write_config
     StopProcessing
@@ -175,81 +162,70 @@ else
 fi
 # load_config_file
 
-
-if [ "$enabled" != "true" ]
-then
-	LogInfo "script ($scriptName) is disabled in ($configFile)"
-	StopProcessing
-	exit 0
+if [ "$enabled" != "true" ]; then
+  LogInfo "script ($scriptName) is disabled in ($configFile)"
+  StopProcessing
+  exit 0
 fi
 
-if [ -z "$mountCommand" ]
-then
-	LogError "mountCommand is not set in ($configFile)"
-	StopProcessing
-	exit 1
+if [ -z "$mountCommand" ]; then
+  LogError "mountCommand is not set in ($configFile)"
+  StopProcessing
+  exit 1
 fi
 
-if [ -z "$backupTarget" ]
-then
-	LogError "backupTarget is not set in ($configFile)"
-	StopProcessing
-	exit 1
+if [ -z "$backupTarget" ]; then
+  LogError "backupTarget is not set in ($configFile)"
+  StopProcessing
+  exit 1
 fi
 
-if ! mountpoint -q "$backupTarget" && ! eval "$mountCommand"
-then
-	LogError "mountCommand ($mountCommand) failed"
-	StopProcessing
-	exit 1
+if ! mountpoint -q "$backupTarget" && ! eval "$mountCommand"; then
+  LogError "mountCommand ($mountCommand) failed"
+  StopProcessing
+  exit 1
 fi
 
-if ! mountpoint -q "$backupTarget"
-then
-	LogError "backupTarget ($backupTarget) is not mounted"
-	StopProcessing
-	exit 1
+if ! mountpoint -q "$backupTarget"; then
+  LogError "backupTarget ($backupTarget) is not mounted"
+  StopProcessing
+  exit 1
 else
-	LogInfo "backupTarget ($backupTarget) is mounted"
+  LogInfo "backupTarget ($backupTarget) is mounted"
 fi
 
-if [ -z "$backupList" ]
-then
-	LogError "backupList is not set in ($configFile)"
-	StopProcessing
-	exit 1
+if [ -z "$backupList" ]; then
+  LogError "backupList is not set in ($configFile)"
+  StopProcessing
+  exit 1
 fi
 
 LogInfo "Start of backups"
-for backupDir in $backupList
-do
-	if [ ! -d "$backupDir" ]
-	then
-		LogError "backupDir ($backupDir) is not a directory"
-		continue
-	fi
-	
-	LogInfo "Start of backup ($backupDir)"
+for backupDir in $backupList; do
+  if [ ! -d "$backupDir" ]; then
+    LogError "backupDir ($backupDir) is not a directory"
+    continue
+  fi
 
-	if ! rsync -ru --iconv=ISO-8859-1,utf-8 -x --no-links --delete "$backupDir" "$backupTarget" > "$logDir/${scriptName}.log"
-	then
-		LogError "rsync failed for ($backupDir)"
-		continue
-	else
-		LogInfo "rsync successful for ($backupDir)"
-	fi
+  LogInfo "Start of backup ($backupDir)"
 
-	RvLog "End of backup ($backupDir)"
+  if ! rsync -ru --iconv=ISO-8859-1,utf-8 -x --no-links --delete "$backupDir" "$backupTarget" >"$logDir/${scriptName}.log"; then
+    LogError "rsync failed for ($backupDir)"
+    continue
+  else
+    LogInfo "rsync successful for ($backupDir)"
+  fi
+
+  RvLog "End of backup ($backupDir)"
 done
 LogInfo "End of all backups"
 
-if ! umount "$backupTarget"
-then
-	LogError "umount failed for ($backupTarget)"
-	StopProcessing
-	exit 1
+if ! umount "$backupTarget"; then
+  LogError "umount failed for ($backupTarget)"
+  StopProcessing
+  exit 1
 else
-	LogInfo "umount successful for ($backupTarget)"
+  LogInfo "umount successful for ($backupTarget)"
 fi
 
 StopProcessing

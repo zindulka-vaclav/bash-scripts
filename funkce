@@ -1,28 +1,28 @@
 #!/bin/bash
 #verze 1.0.3
-#logovani 
+#logovani
 #definice funkci pro logovani behu programu a posilani vystupu mailem
-#_LIST #_Log #_LogError #_RvLog #_StopProcessing #_CheckDir 
+#_LIST #_Log #_LogError #_RvLog #_StopProcessing #_CheckDir
 #_TestDir #_RemoveDir #_RecreateDir
-
 
 scripty="/usr/local/bash-scripts"
 sbinDir="/usr/local/sbin"
 
-#nastaveni verbose vystupu, pokud jeste nebyl nastaven 
-if [ -z "$verbose" ]
-then
-	verbose=0
+#nastaveni verbose vystupu, pokud jeste nebyl nastaven
+if [ -z "$verbose" ]; then
+  verbose=0
 fi
 
 #slouzi pro initialize a script-downloader, urcuje, zda se pri dalsim stazeni spusti i initialize
-version=2		
+version=2
 
 #slozka, kde jsou konfiguracni soubory k jednotlivym scriptum
 configDir="/usr/local/etc/scripty"
 
 #konfiguracni soubor pro konkretni script
 configFile="$configDir/${scriptName}.conf"
+
+cronFile="/etc/cron.d/${scriptName}"
 
 #slozka, kde jsou .err soubory a logy z jednotlivych scriptu
 logDir="/var/log/scripty"
@@ -43,7 +43,7 @@ startFile="$pidDir/${scriptName}.start"
 #konec scriptu
 stopFile="$pidDir/${scriptName}.stop"
 
-#errorFile je prazdny soubor, slouzi pouze pro indikaci pripadnych erroru	
+#errorFile je prazdny soubor, slouzi pouze pro indikaci pripadnych erroru
 errorFile="$pidDir/${scriptName}.err"
 
 #soubor, ktery oznacuje spusteny script, maze se ve funkci StopProcessing
@@ -56,9 +56,8 @@ pidFile="$pidDir/${scriptName}.pid"
 defaultPid="$pidDir/default.pid"
 
 #pokud od minule zustal soubor $errorFile, tak ho odstrani
-if [ -e "$errorFile" ]
-then
-	rm "$errorFile"
+if [ -e "$errorFile" ]; then
+  rm "$errorFile"
 fi
 
 # Define_functions
@@ -66,167 +65,151 @@ fi
 # usage: LogDebug "message"
 # gray debug log output - only if enabled by -d
 LogDebug() {
-	if [ "$DEBUG_OUTPUT" = "true" ]
-	then
-		echo "$(date '+%b %d %T') $HOSTNAME $scriptName:(Debug)[$$]: $1" >> "$logFile"
+  if [ "$DEBUG_OUTPUT" = "true" ]; then
+    echo "$(date '+%b %d %T') $HOSTNAME $scriptName:(Debug)[$$]: $1" >>"$logFile"
 
-		if [ "$verbose" -eq 1 ]
-		then
-			echo -e "\e[1;90m $(date '+%b %d %T') $SCRIPT_NAME (Debug): $1 \e[0m"
-		fi
-	fi
-} 
+    if [ "$verbose" -eq 1 ]; then
+      echo -e "\e[1;90m $(date '+%b %d %T') $SCRIPT_NAME (Debug): $1 \e[0m"
+    fi
+  fi
+}
 
 # _LogInfo
 # usage: LogInfo "message"
 # green info log output
 LogInfo() {
-	echo "$(date '+%b %d %T') $HOSTNAME $scriptName:(Info)[$$]: $1" >> "$logFile"
+  echo "$(date '+%b %d %T') $HOSTNAME $scriptName:(Info)[$$]: $1" >>"$logFile"
 
-	if [ "$verbose" -eq 1 ]
-	then
-		echo -e "\e[1;92m $(date '+%b %d %T') $SCRIPT_NAME (Info): $1 \e[0m"
-	fi
-} 
+  if [ "$verbose" -eq 1 ]; then
+    echo -e "\e[1;92m $(date '+%b %d %T') $SCRIPT_NAME (Info): $1 \e[0m"
+  fi
+}
 
 # _LogWarning
 # usage: LogWarning "message"
 # yellow warning log output
 LogWarning() {
-	echo "$(date '+%b %d %T') $HOSTNAME $scriptName:(Warning)[$$]: $1" >> "$logFile"
-	echo -e "\e[1;33m $(date '+%b %d %T') $SCRIPT_NAME (Warning): $1 \e[0m"
-} 
+  echo "$(date '+%b %d %T') $HOSTNAME $scriptName:(Warning)[$$]: $1" >>"$logFile"
+  echo -e "\e[1;33m $(date '+%b %d %T') $SCRIPT_NAME (Warning): $1 \e[0m"
+}
 
 # _LogError
 # usage: LogError "message"
 # red error log output
 LogError() {
-	echo "$(date '+%b %d %T') $HOSTNAME $scriptName:(Error)[$$]: $1" >> "$logFile"
-	echo  -e "\e[1;91m $(date '+%b %d %T') $SCRIPT_NAME (Error): $1 \e[0m"
-	touch "$errorFile"
-} 
+  echo "$(date '+%b %d %T') $HOSTNAME $scriptName:(Error)[$$]: $1" >>"$logFile"
+  echo -e "\e[1;91m $(date '+%b %d %T') $SCRIPT_NAME (Error): $1 \e[0m"
+  touch "$errorFile"
+}
 
 #_RvLog
-RvLog(){
-	#provede kontrolu navratove hodnoty, v pripade, ze je 0, provede zalogovani predaneho parametru
-	rv="$?"
-	if [ "$rv" -eq 0 ]
-	then
-		LogInfo "[$1] rv=[$rv]"
-	else
-		LogError "[PROBLEM: $1] rv=[$rv]"
-	fi
-	return "$rv"
+RvLog() {
+  #provede kontrolu navratove hodnoty, v pripade, ze je 0, provede zalogovani predaneho parametru
+  rv="$?"
+  if [ "$rv" -eq 0 ]; then
+    LogInfo "[$1] rv=[$rv]"
+  else
+    LogError "[PROBLEM: $1] rv=[$rv]"
+  fi
+  return "$rv"
 }
 
 #_StopProcessing
-StopProcessing(){
-	#posle errory z prubehu, pokud se nejake zapsaly do $errorFile - pouze z duvodu kompatibility a 
-	# pouziti ve vsech scriptech - maily neposila - jen loguje
+StopProcessing() {
+  #posle errory z prubehu, pokud se nejake zapsaly do $errorFile - pouze z duvodu kompatibility a
+  # pouziti ve vsech scriptech - maily neposila - jen loguje
 
-	#odstranuje vzdy, krome pripadu,  kdy je predan parametr keep
-	#ten se predava pouze pri kontrole pomoci funkce TestRunFile()
-	#je to ochrana pred pripadnym smazanim runFile u stale beziciho scriptu
-	if [ "$1" != "keep" ]
-	then
+  #odstranuje vzdy, krome pripadu,  kdy je predan parametr keep
+  #ten se predava pouze pri kontrole pomoci funkce TestRunFile()
+  #je to ochrana pred pripadnym smazanim runFile u stale beziciho scriptu
+  if [ "$1" != "keep" ]; then
 
-		#odstrani runFile, pri volani StopProcessing, jelikoz po nem vzdy nasleduje exit
-		#s vyjimkou parametru keep
-		[ -f "$runFile" ] && rm "$runFile"
-		RvLog "odstraneni runFile ($runFile)"
-	fi
+    #odstrani runFile, pri volani StopProcessing, jelikoz po nem vzdy nasleduje exit
+    #s vyjimkou parametru keep
+    [ -f "$runFile" ] && rm "$runFile"
+    RvLog "odstraneni runFile ($runFile)"
+  fi
 
-	if [ -e "$errorFile" ]
-	then
-		LogError "StopProcessing - script ($scriptName) - nastaly problemy"
+  if [ -e "$errorFile" ]; then
+    LogError "StopProcessing - script ($scriptName) - nastaly problemy"
 
-		return 11
-	else
-		touch "$stopFile"
-		RvLog "STOP - OK - script ($scriptName) dokoncen bez problemu"
-		return 0
-	fi
+    return 11
+  else
+    touch "$stopFile"
+    RvLog "STOP - OK - script ($scriptName) dokoncen bez problemu"
+    return 0
+  fi
 }
 
 #_CheckDir
 #zkontroluje zda existuje slozka predana jako parametr, pokud ne, tak ji vytvori
-CheckDir(){
-	if [ -d "$1" ]
-	then
-		RvLog "CheckDir - slozka $1 existuje"
-		return 0
-	else
-		mkdir -p "$1"
-		RvLog "CheckDir - vytvoreni slozky $1"
-		return "$?"
-	fi
+CheckDir() {
+  if [ -d "$1" ]; then
+    RvLog "CheckDir - slozka $1 existuje"
+    return 0
+  else
+    mkdir -p "$1"
+    RvLog "CheckDir - vytvoreni slozky $1"
+    return "$?"
+  fi
 }
-
 
 #_TestDir
 #zkontroluje, zda existuje predana slozka, pokud ne, loguje error
 TestDir() {
-	if [ ! -e "$1" ]
-	then
-		LogError "TestDir - slozka ($1) neexistuje"
-	fi
+  if [ ! -e "$1" ]; then
+    LogError "TestDir - slozka ($1) neexistuje"
+  fi
 }
-
 
 #_RemoveDir
 #zkontroluje, zda existuje slozka predana jako parametr, pokud ano, tak ji smaze i s obsahem
-RemoveDir(){
-	if [ -d "$1" ]
-	then
-		rm -rf "$1"
-		RvLog "RemoveDir - odstraneni slozky $1"
-	fi
+RemoveDir() {
+  if [ -d "$1" ]; then
+    rm -rf "$1"
+    RvLog "RemoveDir - odstraneni slozky $1"
+  fi
 }
-
 
 #_RecreateDir
 #slouzi pro odstraneni a znovuvytvoreni slozky
-RecreateDir(){
-	RemoveDir "$1"
-	sleep 1
-	CheckDir "$1"
+RecreateDir() {
+  RemoveDir "$1"
+  sleep 1
+  CheckDir "$1"
 }
 
 #_TestRunFile
 #slouzi pro kontrolu, zda neexistuje runFile, pokud existuje, ukonci script
 #pokud neexistuje, tak ho vytvori
-TestRunFile()
-{
-	#kontrola, zda script nebezi od minule
-	if [ -f "$runFile" ]
-	then
-		scriptPid=$(cat "$startFile")
+TestRunFile() {
+  #kontrola, zda script nebezi od minule
+  if [ -f "$runFile" ]; then
+    scriptPid=$(cat "$startFile")
 
-		#zkontroluje pid puvodniho procesu
-		if [ $(ps -p "$scriptPid" | grep -c "$scriptName") -eq 0 ]
-		then
+    #zkontroluje pid puvodniho procesu
+    if [ $(ps -p "$scriptPid" | grep -c "$scriptName") -eq 0 ]; then
 
-			#pokud uz na pidu script nebezi, spusti se normalne
-			touch "$runFile"
-			:
-			LogError "($scriptPid) neodpovida ($scriptName), ignoruje se stary run soubor ($runFile)"
-		else
-			kill "$scriptPid"
-			#pokud na pidu stale bezi puvodni proces, skonci a nic nedela
-			LogError "script ($scriptName) stale bezi ($scriptPid), proveden kill puvodniho ($scriptName) - ($runFile)"
-			#StopProcessing "keep"
-			#exit 6
-		fi
-	else
-		# kontrola existence slozky
-		if [ ! -d "$pidDir" ]
-		then
-			CheckDir "$pidDir"
-		fi
+      #pokud uz na pidu script nebezi, spusti se normalne
+      touch "$runFile"
+      :
+      LogError "($scriptPid) neodpovida ($scriptName), ignoruje se stary run soubor ($runFile)"
+    else
+      kill "$scriptPid"
+      #pokud na pidu stale bezi puvodni proces, skonci a nic nedela
+      LogError "script ($scriptName) stale bezi ($scriptPid), proveden kill puvodniho ($scriptName) - ($runFile)"
+      #StopProcessing "keep"
+      #exit 6
+    fi
+  else
+    # kontrola existence slozky
+    if [ ! -d "$pidDir" ]; then
+      CheckDir "$pidDir"
+    fi
 
-		touch "$runFile"
-		LogInfo "START - OK - zaznamenan zacatek scriptu ($scriptName) - ($runFile)"
-	fi
+    touch "$runFile"
+    LogInfo "START - OK - zaznamenan zacatek scriptu ($scriptName) - ($runFile)"
+  fi
 }
 
 # kontrola existence slozky pro logovani
@@ -234,6 +217,6 @@ CheckDir "$logDir"
 CheckDir "$configDir"
 
 #prida datum na konec outputFile
-echo -e "\n\nstart time: $(date +%F_%H-%M)" >> "$outputFile"
+echo -e "\n\nstart time: $(date +%F_%H-%M)" >>"$outputFile"
 
 TestRunFile

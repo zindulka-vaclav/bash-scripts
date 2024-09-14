@@ -9,22 +9,18 @@ VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 sbinDir="/usr/local/sbin"
 
 # pri predani parametru -x provede zapnuti debug logu
-if [ "$1" = "-x" ]
-then
-	set -x
+if [ "$1" = "-x" ]; then
+  set -x
 fi
 
 # vypsani verze
-if [ "$1" = "-V" ] || [ "$1" = "--version" ]
-then
-	echo "$VERSION"
-	exit 0
+if [ "$1" = "-V" ] || [ "$1" = "--version" ]; then
+  echo "$VERSION"
+  exit 0
 fi
 
 #_PROMENNE
 scriptName="initialize"
-
-cronFile="/etc/cron.d/$scriptName"
 
 #cesta ke scriptu
 scriptDir="/usr/local/bash-scripts"
@@ -32,30 +28,24 @@ verbose=0
 DEBUG_OUTPUT="false"
 
 # Process_parameters
-while [ "$#" -gt 0 ]
-do
+while [ "$#" -gt 0 ]; do
   # PARAMETERS
   # print version and exit
-  if [ "$1" = "-V" ] || [ "$1" = "--version" ]
-  then
+  if [ "$1" = "-V" ] || [ "$1" = "--version" ]; then
     echo "$VERSION"
     exit 0
     # print help and exit
-  elif [ "$1" = "-h" ] || [ "$1" = "--help" ]
-  then
+  elif [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
     Usage
     exit 0
   # OPTIONS
-  elif [ "$1" = "-x" ]
-  then
+  elif [ "$1" = "-x" ]; then
     LogWarning "Detected parameter $1 for bash debug output of the script"
     set -x
-  elif [ "$1" = "-d" ]
-  then
+  elif [ "$1" = "-d" ]; then
     LogWarning "Detected parameter $1 for debug output of log messages"
     DEBUG_OUTPUT="true"
-  elif [ "$1" = "-v" ]
-  then
+  elif [ "$1" = "-v" ]; then
     LogWarning "Detected parameter $1 for verbose output of log messages"
     verbose=1
   else
@@ -63,30 +53,28 @@ do
     Usage
     exit 1
   fi
-  
+
   shift
 done
 # Process_parameters
 
 #spousti se pouze pod rootem
-if [ "$UID" -eq 0 ]
-then
-	# pokud jeste neexistuje slozka se scripty, provede klonovani repozitare
-	if [ ! -d "$scriptDir" ]
-	then
-		# clone repository if it doesn't exists
-		git clone https://gitlab.com/zindulka.vaclav/bash-scripts.git "$scriptDir"
-		echo "Bash scripts repository cloned from gitlab"
-	# pokud uz slozka existuje, prepne se do ni a udela pull
-	else
-		cd "$scriptDir" || exit 2
-		git checkout -f master && git pull || exit 2
-		echo "Git repository updated from master"
-		cd - || exit 2
-	fi
+if [ "$UID" -eq 0 ]; then
+  # pokud jeste neexistuje slozka se scripty, provede klonovani repozitare
+  if [ ! -d "$scriptDir" ]; then
+    # clone repository if it doesn't exists
+    git clone https://gitlab.com/zindulka.vaclav/bash-scripts.git "$scriptDir"
+    echo "Bash scripts repository cloned from gitlab"
+  # pokud uz slozka existuje, prepne se do ni a udela pull
+  else
+    cd "$scriptDir" || exit 2
+    git checkout -f master && git pull || exit 2
+    echo "Git repository updated from master"
+    cd - || exit 2
+  fi
 else
-	echo "Error - script has to be executed as root"
-	exit 1
+  echo "Error - script has to be executed as root"
+  exit 1
 fi
 
 #_LOGOVANI
@@ -98,20 +86,19 @@ CheckDir "$logDir"
 
 LogInfo "Start of script $scriptName"
 
-echo "$$" > "$startFile"
+echo "$$" >"$startFile"
 RvLog "start file set to ($$)"
 
 # write_cron_file
-if [ ! -e "$cronFile" ]
-then
+if [ ! -e "$cronFile" ]; then
   # create new cron file
   {
     echo "# execute initialize daily"
     echo "0 1 * * * root $sbinDir/$scriptName &>$outputFile"
-  } > "$cronFile"
+  } >"$cronFile"
   RvLog "Created new cron file $cronFile for $scriptName"
 else
-	echo "Cron file exists"
+  echo "Cron file exists"
 fi
 # write_cron_file
 
@@ -119,36 +106,32 @@ fi
 chmod -R 600 "$configDir"
 
 #spousti se pouze pod rootem
-if [ "$UID" -eq 0 ]
-then
-	LogInfo "Checking existence of necessary folders"
-	CheckDir "$configDir"
-	CheckDir "$pidDir"
-	CheckDir "$scriptDir"
-	CheckDir "$scripty"
+if [ "$UID" -eq 0 ]; then
+  LogInfo "Checking existence of necessary folders"
+  CheckDir "$configDir"
+  CheckDir "$pidDir"
+  CheckDir "$scriptDir"
+  CheckDir "$scripty"
 
-	LogInfo "Linking of scripts from list to $sbinDir"
+  LogInfo "Linking of scripts from list to $sbinDir"
 
-    #nalinkuje vsechny scripty ve slozce $scriptDir do slozky $sbinDir
-	for script in $(find "$scriptDir" -maxdepth 1 -mindepth 1 -type f | grep -v "funkce" )
-	do
-		ln -sf "$script" "$sbinDir"
-		RvLog "Script ($script) symlinked"
-	done
+  #nalinkuje vsechny scripty ve slozce $scriptDir do slozky $sbinDir
+  for script in $(find "$scriptDir" -maxdepth 1 -mindepth 1 -type f | grep -v "funkce"); do
+    ln -sf "$script" "$sbinDir"
+    RvLog "Script ($script) symlinked"
+  done
 
-	LogInfo "Configuration of cron and logrotate"
-	# nalinkovani logrotate pro scripty
-	ln -sf "$scriptDir"/etc/logrotate.d/scripty /etc/logrotate.d/scripty	
-	RvLog "ln -sf $scriptDir/etc/logrotate.d/scripty /etc/logrotate.d/scripty"
+  LogInfo "Configuration of cron and logrotate"
+  # nalinkovani logrotate pro scripty
+  ln -sf "$scriptDir"/etc/logrotate.d/scripty /etc/logrotate.d/scripty
+  RvLog "ln -sf $scriptDir/etc/logrotate.d/scripty /etc/logrotate.d/scripty"
 
-	# execute scripts if cron files don't exist
-  if [ ! -f /etc/cron.d/server-backup ]
-  then
+  # execute scripts if cron files don't exist
+  if [ ! -f /etc/cron.d/server-backup ]; then
     "$sbinDir/server-backup"
   fi
 
-  if [ -f /etc/cron.d/check-server ]
-  then
+  if [ -f /etc/cron.d/check-server ]; then
     rm "/etc/cron.d/check-server"
   fi
 

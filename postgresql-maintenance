@@ -33,8 +33,6 @@ configFile=""
 
 scriptConfigVersion="1.2"
 
-cronFile="/etc/cron.d/${scriptName}"
-
 # variable to pass postgres variables if set in config file
 postgresqlParams=""
 
