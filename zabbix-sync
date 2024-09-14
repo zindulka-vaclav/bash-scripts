@@ -9,7 +9,7 @@
 # zalohuje se kazdou hodinu do jine slozky, takze v pripade potizi je mozne sahnout az den dozadu
 
 # zajisti, ze pri selhani jednoho prikazu v pipe selze cela pipe
-set -o pipefail
+set -eo pipefail
 
 #LIST
 #_PROMENNE
@@ -25,9 +25,8 @@ set -o pipefail
 
 VERSION_MAJOR=1
 VERSION_MINOR=1
-VERSION_PATCH=5
+VERSION_PATCH=6
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
-
 
 #_PROMENNE
 scriptName="zabbix-sync"
@@ -54,162 +53,144 @@ deBug=0
 procNum=4
 
 # pri predani parametru -x provede zapnuti debug logu
-if [ "$1" = "-x" ]
-then
-	set -x
+if [ "$1" = "-x" ]; then
+  set -x
 fi
 
 # vypsani verze
-if [ "$1" = "-V" ] || [ "$1" = "--version" ]
-then
-	echo "$VERSION"
-	StopProcessing
-	exit 0
+if [ "$1" = "-V" ] || [ "$1" = "--version" ]; then
+  echo "$VERSION"
+  StopProcessing
+  exit 0
 fi
 
 # zapne verbose vystup
-if [ "$1" = "-v" ] || [ "$1" = "--verbose" ]
-then
-	verbose=1
+if [ "$1" = "-v" ] || [ "$1" = "--verbose" ]; then
+  verbose=1
 fi
-
 
 #_LOGOVANI
 #nacteni definice funkci Log,LogError,RvLog,StopProcessing z knihovny
-. $scriptDir/funkce	
+. $scriptDir/funkce
 LogInfo "script ($scriptName) - zacatek"
-echo "$$" > "$startFile"
+echo "$$" >"$startFile"
 LogInfo "($startFile) set to ($$)"
-
 
 #_KONFIGURACE
 #funkce pro zapis souboru pro mysqldump
-write_pgpassFile()
-{
-	{
-	echo "# hostname:port:database:username:password"
-	echo "localhost:5432:zabbix:zabbix:ZABBIX_PASSWORD"
-	echo "localhost:5432:zabbix:zabbix_test:ZABBIX_PASSWORD"
-	} >> "$pgpassFile"
-	chmod 600 "$pgpassFile"
+write_pgpassFile() {
+  {
+    echo "# hostname:port:database:username:password"
+    echo "localhost:5432:zabbix:zabbix:ZABBIX_PASSWORD"
+    echo "localhost:5432:zabbix:zabbix_test:ZABBIX_PASSWORD"
+  } >>"$pgpassFile"
+  chmod 600 "$pgpassFile"
 }
-
 
 #zapise konfiguracni soubor, ze ktereho bude nasledne nacitat hodnoty
-write()
-{
-	if [ -f "$configFile" ]
-	then
-	cp "$configFile" "${configFile}.back"
-	RvLog "provedena zaloha konfigurace do (${configFile}.back)"
-	fi	
-	{
-	echo "#vypne/zapne (1/0) provadeni scriptu"
-	echo "disabled=1"
-	echo ""
-	echo "# IP adresa ostreho serveru - odkud se taha zaloha"
-	echo "remoteIP=37.221.240.48"
-	echo ""
-	echo "# DNS zaznam, ktery slouzi pro preklopeni monitoringu - co nejkratsi TTL, idealne 300 = 5m"
-	echo "dnsName=nmszabbix.tlapnet.cz"
-	echo ""
-	echo "# nazev databaze na ostrem serveru, ktera se bude zalohovat - idealne zachovavat zabbix"
-	echo "# pristup musi byt definovany v ~/.pgpass"
-	echo "remoteDbName=zabbix"
-	echo ""
-	echo "# uzivatel pro pristup k databazi na ostrem serveru - idealne zachovavat zabbix"
-	echo "# pristup musi byt definovany v ~/.pgpass"
-	echo "remoteDbUser=zabbix"
-	echo ""
-	echo "# nazev databaze na zaloznim serveru, kam se obnovi zaloha z ostreho - zabbix | zabbix_test"
-	echo "# pristup musi byt definovany v ~/.pgpass"
-	echo "# pro testovani lze posilat do testovaci databaze - pozor, na jine hodnoty nez zabbix, nebo zabbix_test"
-	echo "localDbName=zabbix_test"
-	echo ""
-	echo "# uzivatel pro pristup k databazi na zaloznim serveru - idealne zachovavat zabbix"
-	echo "# pristup musi byt definovany v ~/.pgpass"
-	echo "localDbUser=zabbix"
-	echo ""
-	echo "#urcuje pocet soubeznych procesu pro zalohovani a obnoveni databaze"
-	echo "#pro kazdy jeden proces to znamena jeden pg_dump a jeden postgresql worker, takze opatrne"
-	echo "procNum=4"
-	} > "$configFile"
-	LogError "zapsan konfiguracni soubor pro server ($HOSTNAME)"
+write() {
+  if [ -f "$configFile" ]; then
+    cp "$configFile" "${configFile}.back"
+    RvLog "provedena zaloha konfigurace do (${configFile}.back)"
+  fi
+  {
+    echo "#vypne/zapne (1/0) provadeni scriptu"
+    echo "disabled=1"
+    echo ""
+    echo "# IP adresa ostreho serveru - odkud se taha zaloha"
+    echo "remoteIP=37.221.240.48"
+    echo ""
+    echo "# DNS zaznam, ktery slouzi pro preklopeni monitoringu - co nejkratsi TTL, idealne 300 = 5m"
+    echo "dnsName=nmszabbix.tlapnet.cz"
+    echo ""
+    echo "# nazev databaze na ostrem serveru, ktera se bude zalohovat - idealne zachovavat zabbix"
+    echo "# pristup musi byt definovany v ~/.pgpass"
+    echo "remoteDbName=zabbix"
+    echo ""
+    echo "# uzivatel pro pristup k databazi na ostrem serveru - idealne zachovavat zabbix"
+    echo "# pristup musi byt definovany v ~/.pgpass"
+    echo "remoteDbUser=zabbix"
+    echo ""
+    echo "# nazev databaze na zaloznim serveru, kam se obnovi zaloha z ostreho - zabbix | zabbix_test"
+    echo "# pristup musi byt definovany v ~/.pgpass"
+    echo "# pro testovani lze posilat do testovaci databaze - pozor, na jine hodnoty nez zabbix, nebo zabbix_test"
+    echo "localDbName=zabbix_test"
+    echo ""
+    echo "# uzivatel pro pristup k databazi na zaloznim serveru - idealne zachovavat zabbix"
+    echo "# pristup musi byt definovany v ~/.pgpass"
+    echo "localDbUser=zabbix"
+    echo ""
+    echo "#urcuje pocet soubeznych procesu pro zalohovani a obnoveni databaze"
+    echo "#pro kazdy jeden proces to znamena jeden pg_dump a jeden postgresql worker, takze opatrne"
+    echo "procNum=4"
+  } >"$configFile"
+  LogError "zapsan konfiguracni soubor pro server ($HOSTNAME)"
 }
-
 
 # soubor s heslem k postgresql databazi zabbixu
 pgpassFile="$HOME/.pgpass"
 
 #kontrola existence pgpassFile, pripadne vytvoreni z existujiciho configu
 #v pripade prazdneho hesla zaloguje error
-if [ ! -f "$pgpassFile" ]
-then
-	write_pgpassFile
-	LogError "Zapsan novy soubor [$pgpassFile] nutno doplnit heslo pro uzivatele zabbix"
-	StopProcessing
-	exit 1
+if [ ! -f "$pgpassFile" ]; then
+  write_pgpassFile
+  LogError "Zapsan novy soubor [$pgpassFile] nutno doplnit heslo pro uzivatele zabbix"
+  StopProcessing
+  exit 1
 fi
 
 #_ZABBIX_SYNC_CRON
 #pokud neni zaznam pro postgresql-backup
-if [ ! -e /etc/cron.d/zabbix-sync ]
-then
-	#vytvori zaznam, ktery pravidelne spousti dany script v nastaveny cas a kompletni vystup se uklada do /var/log
-	{ 
-		echo "#denni spousteni zabbix-sync"
-		echo "0 2 * * * root flock -n $pidDir/zabbix-sync.lock $sbinDir/zabbix-sync &>$outputFile"
-	} > /etc/cron.d/zabbix-sync
-	RvLog "zapsano spousteni zabbix-sync scriptu do cronu"
+if [ ! -e "$cronFile" ]; then
+  #vytvori zaznam, ktery pravidelne spousti dany script v nastaveny cas a kompletni vystup se uklada do /var/log
+  {
+    echo "#denni spousteni zabbix-sync"
+    echo "0 2 * * * root flock -n $pidDir/zabbix-sync.lock $sbinDir/zabbix-sync &>$outputFile"
+  } >"$cronFile"
+  RvLog "zapsano spousteni zabbix-sync scriptu do cronu $cronFile"
 fi
 
 #nacteni $configFile, pripadne zapsani defaultniho
-if [ -f "$configFile" ]
-then
-	. "$configFile"
-	LogInfo "nacten konfiguracni soubor ($configFile)"
+if [ -f "$configFile" ]; then
+  . "$configFile"
+  LogInfo "nacten konfiguracni soubor ($configFile)"
 else
-	write
-	. "$configFile"
-	LogError "Byl zapsan konfiguracni soubor, nutno upravit konfiguraci"
-	StopProcessing
-	exit 1
+  write
+  . "$configFile"
+  LogError "Byl zapsan konfiguracni soubor, nutno upravit konfiguraci"
+  StopProcessing
+  exit 1
 fi
 
 #nastavenim disabled na 1 se vypne spousteni scriptu, uprav $configFile, mail se neposila
-if [ "$disabled" -eq 1 ]
-then
-	LogInfo "script ($scriptName) byl disablovan v konfiguracnim souboru ($configFile)"
-	StopProcessing
-	exit 1
+if [ "$disabled" -eq 1 ]; then
+  LogInfo "script ($scriptName) byl disablovan v konfiguracnim souboru ($configFile)"
+  StopProcessing
+  exit 1
 fi
 
-
 #kontrola, zda mysqlPassword neobsahuje EMPTY
-if [ "$(grep -c "ZABBIX_PASSWORD" "$pgpassFile")" -ne 0 ]
-then
-	LogError "POZOR, neni nastaveno heslo pro zabbix-sync v [$pgpassFile]"
-	StopProcessing
-	exit 1
+if [ "$(grep -c "ZABBIX_PASSWORD" "$pgpassFile")" -ne 0 ]; then
+  LogError "POZOR, neni nastaveno heslo pro zabbix-sync v [$pgpassFile]"
+  StopProcessing
+  exit 1
 fi
 
 # _kontrola_DNS
 LogInfo "kontrola DNS zaznamu"
 
-if [ "$(ping -c1 "$dnsName" | grep -c "$remoteIP")" -eq 0 ]
-then
-	LogError "Problem pri overeni DNS zaznamu [$dnsName] nemiri na pozadovanou IP [$remoteIP]"
-	LogError "Script nebude pokracovat, aby nedoslo k prepsani produkcni databaze"
-	StopProcessing
-	exit 1
+if [ "$(ping -c1 "$dnsName" | grep -c "$remoteIP")" -eq 0 ]; then
+  LogError "Problem pri overeni DNS zaznamu [$dnsName] nemiri na pozadovanou IP [$remoteIP]"
+  LogError "Script nebude pokracovat, aby nedoslo k prepsani produkcni databaze"
+  StopProcessing
+  exit 1
 else
-	if ! systemctl stop apache2 zabbix-server
-	then
-		LogError "Problem se zastavovanim apache nebo zabbix-serveru pred prenosem databaze"
-		exit 2
-	else
-		LogInfo "Uspesne zastaven apache nebo zabbix-serveru pred prenosem databaze"
-	fi
+  if ! systemctl stop apache2 zabbix-server; then
+    LogError "Problem se zastavovanim apache nebo zabbix-serveru pred prenosem databaze"
+    exit 2
+  else
+    LogInfo "Uspesne zastaven apache nebo zabbix-serveru pred prenosem databaze"
+  fi
 fi
 # _kontrola_DNS
 
@@ -218,14 +199,11 @@ LogInfo "zacatek zalohy databaze na ostrem serveru"
 # _zaloha_ostre_databaze
 # parametr -T zajisti, ze se nesnazi vytvorit pseude terminal a nezobrazuje se hlaska:
 # Pseudo-terminal will not be allocated because stdin is not a terminal.
-if ! ssh -T "$remoteUser"@"$remoteIP" > /dev/null << EOF
+if ! ssh -T "$remoteUser"@"$remoteIP" >/dev/null <<EOF; then
 rm -r $remoteBackupDir
-pg_dump -U$remoteDbUser -w --dbname=$remoteDbName --create --clean \
-	--format=directory --file=$remoteBackupDir --jobs=$procNum --schema=public
+pg_dump -U$remoteDbUser -w --dbname=$remoteDbName --create --clean 	--format=directory --file=$remoteBackupDir --jobs=$procNum --schema=public
 EOF
-then
-  if ! systemctl restart apache2 zabbix-server
-  then
+  if ! systemctl restart apache2 zabbix-server; then
     LogError "Problem se zapinanim apache nebo zabbix-serveru po prenosu databaze"
     StopProcessing
     exit 3
@@ -233,24 +211,28 @@ then
     LogInfo "Uspesne spusten apache nebo zabbix-serveru po prenosu databaze"
   fi
 
-	LogError "Problem pri vytvareni zalohy databaze na ostrem serveru"
-	StopProcessing
-	exit 3
+  LogError "Problem pri vytvareni zalohy databaze na ostrem serveru"
+  StopProcessing
+  exit 3
 else
-	LogInfo "Uspesne vytvorena zaloha ostre databaze"
+  LogInfo "Uspesne vytvorena zaloha ostre databaze"
 fi
 # _zaloha_ostre_databaze
+
+# TODO: this section was modified by formatter and I'm not sure if it's correct
+echo "THIS SECTION NEEDS TO BE CHECKED"
+exit 1
 
 # _stazeni_zalohy_ostre_databaze
 # stahne zalohu databaze a pred dropem provede restart postgresql, protoze kdyz
 # zustanou navazane connectiony, nelze databazi dropnout
 LogInfo "stazeni zalohy na zalozni server"
-if ! (rm -r "$localBackupDir" 2> /dev/null;
-			scp -r "$remoteUser"@"$remoteIP":"$remoteBackupDir" "$localBackupDir" > /dev/null &&\
-			systemctl restart postgresql)
-then
-  if ! systemctl restart apache2 zabbix-server
-  then
+if ! (
+  rm -r "$localBackupDir" 2>/dev/null
+  scp -r "$remoteUser"@"$remoteIP":"$remoteBackupDir" "$localBackupDir" >/dev/null &&
+    systemctl restart postgresql
+); then
+  if ! systemctl restart apache2 zabbix-server; then
     LogError "Problem se zapinanim apache nebo zabbix-serveru po prenosu databaze"
     StopProcessing
     exit 4
@@ -258,17 +240,17 @@ then
     LogInfo "Uspesne spusten apache nebo zabbix-serveru po prenosu databaze"
   fi
 
-	LogError "Problem pri stahovani zalohy z ostreho serveru [$remoteIP]"
-	StopProcessing
-	exit 4
+  LogError "Problem pri stahovani zalohy z ostreho serveru [$remoteIP]"
+  StopProcessing
+  exit 4
 else
-	LogInfo "Uspesne stazena zaloha z remote serveru [$remoteIP]"
+  LogInfo "Uspesne stazena zaloha z remote serveru [$remoteIP]"
 fi
 # _stazeni_zalohy_ostre_databaze
 
 # _drop_databaze_na_zaloznim_serveru
 LogInfo "drop databaze na zaloznim serveru"
-if ! psql -Upostgres -v ON_ERROR_STOP=1 > /dev/null << EOF
+if ! psql -Upostgres -v ON_ERROR_STOP=1 >/dev/null <<EOF; then
 DROP DATABASE IF EXISTS $localDbName;
 CREATE DATABASE $localDbName OWNER $localDbUser;
 \c $localDbName
@@ -279,9 +261,7 @@ CREATE SCHEMA IF NOT EXISTS history AUTHORIZATION $localDbUser;
 CREATE SCHEMA IF NOT EXISTS history_uint AUTHORIZATION $localDbUser;
 CREATE SCHEMA IF NOT EXISTS history_text AUTHORIZATION $localDbUser;
 EOF
-then
-  if ! systemctl restart apache2 zabbix-server
-  then
+  if ! systemctl restart apache2 zabbix-server; then
     LogError "Problem se zapinanim apache nebo zabbix-serveru po prenosu databaze"
     StopProcessing
     exit 5
@@ -289,22 +269,20 @@ then
     LogInfo "Uspesne spusten apache nebo zabbix-serveru po prenosu databaze"
   fi
 
-	LogError "Problem pri dropu a znovu vytvoreni databaze $localDbName"
-	StopProcessing
-	exit 5
+  LogError "Problem pri dropu a znovu vytvoreni databaze $localDbName"
+  StopProcessing
+  exit 5
 else
-	LogInfo "Uspesne dropnuta a znovu vytvorena databaze $localDbName"
+  LogInfo "Uspesne dropnuta a znovu vytvorena databaze $localDbName"
 fi
 # _drop_databaze_na_zaloznim_serveru
 
 # _obnova_zalohy_na_zaloznim_serveru
 LogInfo "obnova zalohy na zaloznim serveru"
-if ! (cd "$localBackupDir" &&\
-			pg_restore -U "$localDbUser" -w --dbname="$localDbName" \
-				--if-exists --clean --schema=public --jobs="$procNum" .)
-then
-  if ! systemctl restart apache2 zabbix-server
-  then
+if ! (cd "$localBackupDir" &&
+  pg_restore -U "$localDbUser" -w --dbname="$localDbName" \
+    --if-exists --clean --schema=public --jobs="$procNum" .); then
+  if ! systemctl restart apache2 zabbix-server; then
     LogError "Problem se zapinanim apache nebo zabbix-serveru po prenosu databaze"
     StopProcessing
     exit 6
@@ -312,19 +290,17 @@ then
     LogInfo "Uspesne spusten apache nebo zabbix-serveru po prenosu databaze"
   fi
 
-	LogError "Problem pri obnove databaze na zaloznim serveru"
-	StopProcessing
-	exit 6
+  LogError "Problem pri obnove databaze na zaloznim serveru"
+  StopProcessing
+  exit 6
 else
-	LogInfo "Uspesne obnovena databaze na zaloznim serveru"
+  LogInfo "Uspesne obnovena databaze na zaloznim serveru"
 fi
 # _obnova_zalohy_na_zaloznim_serveru
 
 # _prenos_certifikatu
-if ! rsync -a zabbix-sync@nmszabbix.tlapnet.cz:/etc/letsencrypt/{archive,csr,live,renewal} /etc/letsencrypt
-then
-  if ! systemctl restart apache2 zabbix-server
-  then
+if ! rsync -a zabbix-sync@nmszabbix.tlapnet.cz:/etc/letsencrypt/{archive,csr,live,renewal} /etc/letsencrypt; then
+  if ! systemctl restart apache2 zabbix-server; then
     LogError "Problem se zapinanim apache nebo zabbix-serveru po prenosu databaze"
     StopProcessing
     exit 7
@@ -332,22 +308,21 @@ then
     LogInfo "Uspesne spusten apache nebo zabbix-serveru po prenosu databaze"
   fi
 
-	LogError "Problem pri prenosu certifikatu letsencryptu"
-	StopProcessing
-	exit 7
+  LogError "Problem pri prenosu certifikatu letsencryptu"
+  StopProcessing
+  exit 7
 else
-	LogInfo "Uspesne preneseny certifikaty letsencryptu"
+  LogInfo "Uspesne preneseny certifikaty letsencryptu"
 fi
 # _prenos_certifikatu
 
 # _restart_apache_a_zabbix_serveru
-if ! systemctl restart apache2 zabbix-server
-then
-	LogError "Problem se zapinanim apache nebo zabbix-serveru po prenosu databaze"
-	StopProcessing
-	exit 8
+if ! systemctl restart apache2 zabbix-server; then
+  LogError "Problem se zapinanim apache nebo zabbix-serveru po prenosu databaze"
+  StopProcessing
+  exit 8
 else
-	LogInfo "Uspesne spusten apache nebo zabbix-serveru po prenosu databaze"
+  LogInfo "Uspesne spusten apache nebo zabbix-serveru po prenosu databaze"
 fi
 # _restart_apache_a_zabbix_serveru
 

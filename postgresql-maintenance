@@ -9,7 +9,7 @@ set -- "$@"
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=7
+VERSION_PATCH=8
 VERSION="${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}"
 
 # Declare_variables
@@ -32,8 +32,6 @@ instanceName=""
 configFile=""
 
 scriptConfigVersion="1.2"
-
-cronFile="/etc/cron.d/${scriptName}"
 
 # variable to pass postgres variables if set in config file
 postgresqlParams=""

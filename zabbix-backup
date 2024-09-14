@@ -4,7 +4,7 @@
 # zaloha se provadi pomoci pg_dump ve formatu slozky - komprese ve vychozim stavu je vyssi, nez pg_dump | gzip
 
 # zajisti, ze pri selhani jednoho prikazu v pipe selze cela pipe
-set -o pipefail
+set -eo pipefail
 
 #LIST
 #_PROMENNE
@@ -16,20 +16,18 @@ set -o pipefail
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=7
+VERSION_PATCH=8
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # pri predani parametru -x provede zapnuti debug logu
-if [ "$1" = "-x" ]
-then
-	set -x
+if [ "$1" = "-x" ]; then
+  set -x
 fi
 
 # vypsani verze
-if [ "$1" = "-V" -o "$1" = "--version" ]
-then
-	echo "$VERSION"
-	exit 0
+if [ "$1" = "-V" -o "$1" = "--version" ]; then
+  echo "$VERSION"
+  exit 0
 fi
 
 #_PROMENNE
@@ -46,114 +44,97 @@ scriptDir="/usr/local/bash-scripts"
 verbose=0
 deBug=0
 
-
 #_EXITY
 #exit 1	#script byl disablovan v konfiguracnim souboru
 #exit 2	#nebyla nastavena nektera z potrebnych promennych v $configFile
 
-
 #_LOGOVANI
 
 #nacteni definice funkci Log,LogError,RvLog,StopProcessing z knihovny
-. $scriptDir/funkce	
+. $scriptDir/funkce
 LogInfo "script ($scriptName) - zacatek"
-echo "$$" > "$startFile"
+echo "$$" >"$startFile"
 LogInfo "($startFile) set to ($$)"
-
 
 #_KONFIGURACE
 
-
 #funkce pro zapis souboru pro mysqldump
-write_pgpassFile()
-{
-	{
-	echo "# hostname:port:database:username:password"
-	echo "localhost:5432:zabbix:zabbix:ZABBIX_PASSWORD"
-	} >> "$pgpassFile"
-	chmod 600 "$pgpassFile"
+write_pgpassFile() {
+  {
+    echo "# hostname:port:database:username:password"
+    echo "localhost:5432:zabbix:zabbix:ZABBIX_PASSWORD"
+  } >>"$pgpassFile"
+  chmod 600 "$pgpassFile"
 }
-
 
 #zapise konfiguracni soubor, ze ktereho bude nasledne nacitat hodnoty
-write(){
-	if [ -f "$configFile" ]
-	then
-	cp "$configFile" "${configFile}.back"
-	RvLog "provedena zaloha konfigurace do (${configFile}.back)"
-	fi	
-	{
-	echo "#vypne/zapne (1/0) provadeni scriptu"
-	echo "disabled=1"
-	echo ""
-	echo "#nastavuje, kolik zaloh zpetne se bude drzet"
-	echo "backupLimit=14"
-	echo ""
-	echo "#urcuje pocet soubeznych procesu pro zalohovani"
-	echo "#pro kazdy jeden proces to znamena jeden pg_dump a jeden postgresql worker, takze opatrne"
-	echo "#rozumne maximum je 8, pokud to zvladnou disky"
-	echo "procNum=8"
-	} > "$configFile"
-	LogError "zapsan konfiguracni soubor pro server ($HOSTNAME)"
+write() {
+  if [ -f "$configFile" ]; then
+    cp "$configFile" "${configFile}.back"
+    RvLog "provedena zaloha konfigurace do (${configFile}.back)"
+  fi
+  {
+    echo "#vypne/zapne (1/0) provadeni scriptu"
+    echo "disabled=1"
+    echo ""
+    echo "#nastavuje, kolik zaloh zpetne se bude drzet"
+    echo "backupLimit=14"
+    echo ""
+    echo "#urcuje pocet soubeznych procesu pro zalohovani"
+    echo "#pro kazdy jeden proces to znamena jeden pg_dump a jeden postgresql worker, takze opatrne"
+    echo "#rozumne maximum je 8, pokud to zvladnou disky"
+    echo "procNum=8"
+  } >"$configFile"
+  LogError "zapsan konfiguracni soubor pro server ($HOSTNAME)"
 }
-
 
 # soubor s heslem k postgresql databazi zabbixu
 pgpassFile="$HOME/.pgpass"
 
 #kontrola existence pgpassFile, pripadne vytvoreni z existujiciho configu
 #v pripade prazdneho hesla zaloguje error
-if [ ! -f "$pgpassFile" ]
-then
-	write_pgpassFile
-	LogError "Zapsan novy soubor [$pgpassFile] nutno doplnit heslo pro uzivatele zabbix"
-	StopProcessing
-	exit 1
+if [ ! -f "$pgpassFile" ]; then
+  write_pgpassFile
+  LogError "Zapsan novy soubor [$pgpassFile] nutno doplnit heslo pro uzivatele zabbix"
+  StopProcessing
+  exit 1
 fi
 
 #_ZABBIX_BACKUP_CRON
 #pokud neni zaznam pro postgresql-backup
-if [ ! -e /etc/cron.d/zabbix-backup ]
-then
-	#vytvori radek, ktery spousti dany script ve 2:00 a kompletni debug vystup se uklada do souboru ve /var/log
-	{ 
-		echo "#denni spousteni zabbix-backup"
-		echo "0 1 * * * root $sbinDir/zabbix-backup &>$outputFile"
-	} > /etc/cron.d/zabbix-backup
-	RvLog "zapsano spousteni zabbix-backup scriptu do cronu"
+if [ ! -e "$cronFile" ]; then
+  #vytvori radek, ktery spousti dany script ve 2:00 a kompletni debug vystup se uklada do souboru ve /var/log
+  {
+    echo "#denni spousteni zabbix-backup"
+    echo "0 1 * * * root $sbinDir/zabbix-backup &>$outputFile"
+  } >"$cronFile"
+  RvLog "zapsano spousteni zabbix-backup scriptu do cronu $cronFile"
 fi
 
 #nacteni $configFile, pripadne zapsani defaultniho
-if [ -f "$configFile" ]
-then
-	. "$configFile"
-	LogInfo "nacten konfiguracni soubor ($configFile)"
+if [ -f "$configFile" ]; then
+  . "$configFile"
+  LogInfo "nacten konfiguracni soubor ($configFile)"
 else
-	write
-	. "$configFile"
+  write
+  . "$configFile"
 fi
-
 
 #nastavenim disabled na 1 se vypne spousteni scriptu, uprav $configFile, mail se neposila
-if [ "$disabled" -eq 1 ]
-then
-	LogInfo "script ($scriptName) byl disablovan v konfiguracnim souboru ($configFile)"
-	StopProcessing
-	exit 1
+if [ "$disabled" -eq 1 ]; then
+  LogInfo "script ($scriptName) byl disablovan v konfiguracnim souboru ($configFile)"
+  StopProcessing
+  exit 1
 fi
-
 
 #kontrola, zda mysqlPassword neobsahuje EMPTY
-if [ $(grep -c "ZABBIX_PASSWORD" "$pgpassFile") -ne 0 ]
-then
-	LogError "POZOR, neni nastaveno heslo pro zabbix-backup v [$pgpassFile]"
-	StopProcessing
-	exit 13
+if [ $(grep -c "ZABBIX_PASSWORD" "$pgpassFile") -ne 0 ]; then
+  LogError "POZOR, neni nastaveno heslo pro zabbix-backup v [$pgpassFile]"
+  StopProcessing
+  exit 13
 fi
 
-
 LogInfo "zacatek zalohovani"
-
 
 #_ZALOHA
 CheckDir "$backupDir/$backupDate/"
@@ -164,19 +145,17 @@ pg_dump -Uzabbix -w --dbname=zabbix --create --clean --format=directory --file="
 RvLog "Vytvoren pg_dump databaze s nazvem ($backupName)"
 
 #kontrola navratove hodnoty cd
-if [ "$?" -eq 0 -a -d "$backupName" ]
-then
-	LogInfo "Uspesne dokoncena zaloha databaze"
+if [ "$?" -eq 0 -a -d "$backupName" ]; then
+  LogInfo "Uspesne dokoncena zaloha databaze"
 fi
 
 #kontrola dostatecneho mnozstvi zaloh
-if [ $(find "$backupDir" -maxdepth 1 -mindepth 1 -type d | wc -l) -gt "$backupLimit" ]
-then
-	#odstraneni zaloh starsich nez $backupLimit
-	find "$backupDir" -maxdepth 1 -mindepth 1 -type d -mtime +"$backupLimit" -exec rm -r {} \;
-	RvLog "odstraneni starych zaloh z ($backupDir)"
+if [ $(find "$backupDir" -maxdepth 1 -mindepth 1 -type d | wc -l) -gt "$backupLimit" ]; then
+  #odstraneni zaloh starsich nez $backupLimit
+  find "$backupDir" -maxdepth 1 -mindepth 1 -type d -mtime +"$backupLimit" -exec rm -r {} \;
+  RvLog "odstraneni starych zaloh z ($backupDir)"
 else
-	LogError "POZOR - nedostatecny pocet zaloh zabbixu"
+  LogError "POZOR - nedostatecny pocet zaloh zabbixu"
 fi
 
 LogInfo "Zalohu lze obnovit pomoci:"

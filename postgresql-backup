@@ -10,7 +10,7 @@ set -- "$@"
 
 VERSION_MAJOR=1
 VERSION_MINOR=1
-VERSION_PATCH=0
+VERSION_PATCH=1
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # Declare_variables
@@ -43,8 +43,6 @@ configFile=""
 
 scriptConfigVersion=1.3
 
-cronFile="/etc/cron.d/$scriptName"
-
 # variable to pass postgres variables if set in config file
 postgresqlParams_pg_dump=""
 postgresqlParams_pg_dumpall=""
@@ -59,7 +57,7 @@ verbose=0
 source $scriptDir/funkce
 LogDebug "Sourced common script funkce"
 LogInfo "script ($scriptName) - start"
-echo "$$" > "$startFile"
+echo "$$" >"$startFile"
 LogInfo "($startFile) set to ($$)"
 # Load_functions
 
@@ -106,7 +104,7 @@ Supported options:
 
 # _write_config
 # write new config file / update from old one
-write_config(){
+write_config() {
 
   # default values for variables - updated in case of existing file
   configVersion="$scriptConfigVersion"
@@ -118,10 +116,9 @@ write_config(){
   postgresqlHost=""
   cpuCount=1
   ignoredDatabases="zabbix"
-  
+
   # if config file exists, create backup and source it to preserve values
-  if [ -f "$configFile" ]
-  then
+  if [ -f "$configFile" ]; then
     cp "$configFile" "${configFile}.back"
     RvLog "Created backup of old config file (${configFile}.back)"
     source "${configFile}.back"
@@ -129,7 +126,7 @@ write_config(){
     # replace config version with script version to update config file
     configVersion="$scriptConfigVersion"
   fi
-  
+
   {
     echo "# config version - checked by the script - for automatic config update"
     echo "configVersion=\"$configVersion\""
@@ -153,29 +150,25 @@ write_config(){
     echo "cpuCount=\"$cpuCount\""
     echo "# space separated list of ignored databases - zabbix other_db"
     echo "ignoredDatabases=\"$ignoredDatabases\""
-  } > "$configFile"
+  } >"$configFile"
   LogError "Config file $configFile written on ($HOSTNAME)"
 }
 # _write_config
 # Define_functions
 
 # Process_parameters
-while [ "$#" -gt 0 ]
-do
+while [ "$#" -gt 0 ]; do
   # PARAMETERS
   # print version and exit
-  if [ "$1" = "-V" ] || [ "$1" = "--version" ]
-  then
+  if [ "$1" = "-V" ] || [ "$1" = "--version" ]; then
     echo "$VERSION"
     exit 0
     # print help and exit
-  elif [ "$1" = "-h" ] || [ "$1" = "--help" ]
-  then
+  elif [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
     Usage
     exit 0
     # instance name
-  elif [ "$1" = "-i" ]
-  then
+  elif [ "$1" = "-i" ]; then
     # load config file parameter
     shift
 
@@ -190,8 +183,7 @@ do
 
     LogWarning "Processing instance $instanceName"
     LogWarning "Defined alternative config file $configFile"
-  elif [ "$1" = "--db-name" ]
-  then
+  elif [ "$1" = "--db-name" ]; then
     # load config file parameter
     shift
 
@@ -199,16 +191,13 @@ do
 
     LogWarning "Processing only database $databaseName"
   # OPTIONS
-  elif [ "$1" = "-x" ]
-  then
+  elif [ "$1" = "-x" ]; then
     LogWarning "Detected parameter $1 for bash debug output of the script"
     set -x
-  elif [ "$1" = "-d" ]
-  then
+  elif [ "$1" = "-d" ]; then
     LogWarning "Detected parameter $1 for debug output of log messages"
     DEBUG_OUTPUT="true"
-  elif [ "$1" = "-v" ]
-  then
+  elif [ "$1" = "-v" ]; then
     LogWarning "Detected parameter $1 for verbose output of log messages"
     verbose=1
   else
@@ -216,29 +205,27 @@ do
     Usage
     exit 1
   fi
-  
+
   shift
 done
 # Process_parameters
 
 # write_cron_file
-if [ ! -e "$cronFile" ]
-then
+if [ ! -e "$cronFile" ]; then
   # create new cron file
   {
     echo "# execute $scriptName daily - default instance"
     echo "0 1 * * * root $sbinDir/$scriptName &>$outputFile"
-  } > "$cronFile"
+  } >"$cronFile"
   RvLog "Created new cron file $cronFile for $scriptName"
 else
   # for non-default instance - create new line in cron file if not present
-  if  [ -n "$instanceName" ] &&\
-      [ $(grep -Ec "$scriptName.*$instanceName" "$cronFile") -eq 0 ]
-  then
+  if [ -n "$instanceName" ] &&
+    [ $(grep -Ec "$scriptName.*$instanceName" "$cronFile") -eq 0 ]; then
     # add line for this instance
     {
       echo "0 2 * * * root $sbinDir/$scriptName -i $instanceName &>$outputFile"
-    } >> "$cronFile"
+    } >>"$cronFile"
     RvLog "Added instance $instanceName to cron file $cronFile for $scriptName"
   fi
 fi
@@ -246,14 +233,12 @@ fi
 
 # load_config_file
 # load variables from config file
-if [ -f "$configFile" ]
-then
+if [ -f "$configFile" ]; then
   source "$configFile"
   LogInfo "Successfully loaded config file ($configFile)"
 
   # check script and config version
-  if [ "$scriptConfigVersion" != "$configVersion" ]
-  then
+  if [ "$scriptConfigVersion" != "$configVersion" ]; then
     LogError "Config version ($configVersion) and script version ($scriptConfigVersion) missmatch"
     write_config
     StopProcessing
@@ -266,8 +251,7 @@ fi
 # load_config_file
 
 # check config - stop on disabled execution
-if [ "$enabled" = "false" ]
-then
+if [ "$enabled" = "false" ]; then
   LogInfo "Script ($scriptName) is disabled in config file ($configFile)"
   StopProcessing
   exit 1
@@ -275,36 +259,31 @@ fi
 
 # process_variables
 #kontrola nastaveni promennych
-if [ -z "$backupLimit" ] || [ -z "$postgresqlUser" ] || [ -z "$backupDir" ]
-then
+if [ -z "$backupLimit" ] || [ -z "$postgresqlUser" ] || [ -z "$backupDir" ]; then
   LogError "Empty one of the key variables backupLimit=($backupLimit),\n\
     postgresqlUser=($postgresqlUser), backupDir=($backupDir)"
   StopProcessing
   exit 2
-elif [ -n "$postgresqlPassword" ]
-then
+elif [ -n "$postgresqlPassword" ]; then
   export PGPASSWORD="$postgresqlPassword"
 fi
 
 # if port is set in configuration, pass it to variable
-if [ -n "$postgresqlPort" ]
-then
+if [ -n "$postgresqlPort" ]; then
   LogInfo "Postgresql port set to $postgresqlPort"
   postgresqlParams_pg_dump="$postgresqlParams_pg_dump -p $postgresqlPort"
   postgresqlParams_pg_dumpall="$postgresqlParams_pg_dumpall -p $postgresqlPort"
 fi
 
 # if host is set in configuration, pass it to variable
-if [ -n "$postgresqlHost" ]
-then
+if [ -n "$postgresqlHost" ]; then
   LogInfo "Postgresql host set to $postgresqlHost"
   postgresqlParams_pg_dump="$postgresqlParams_pg_dump -h $postgresqlHost"
   postgresqlParams_pg_dumpall="$postgresqlParams_pg_dumpall -h $postgresqlHost"
 fi
 
 # for sudo -u postgres change group of backupDir
-if [[ "$postgresqlCommandPrefix" =~ "sudo -u " ]]
-then
+if [[ "$postgresqlCommandPrefix" =~ "sudo -u " ]]; then
   user=$(echo "$postgresqlCommandPrefix" | sed -e 's/sudo -u\ *\(\w\+\)\ */\1/g')
   chown -R "$user:$user" "$backupDir"
   find "$backupDir" -type d -exec chmod g+s {} \;
@@ -317,8 +296,7 @@ fi
 #-w don't ask for password, PGPASSWORD must be set or $HOME/.pgpass file present
 #-At disable visual improvements of query result
 #-c command to execute
-if [ -z "$databaseName" ]
-then
+if [ -z "$databaseName" ]; then
   backupARRAY=($(${postgresqlCommandPrefix}psql -U"$postgresqlUser" ${postgresqlParams_pg_dump} -w -At \
     -c "select datname from pg_database where not datistemplate and datallowconn order by datname;"))
   RvLog "backupARRAY (${backupARRAY[@]}) loaded from postgresql"
@@ -330,40 +308,35 @@ fi
 
 # if count of cpus is set in configuration, pass it to variable
 # it has to be after psql command because it doesn't support --jobs parameter
-if [ -n "$cpuCount" ]
-then
+if [ -n "$cpuCount" ]; then
   LogInfo "Postgresql cpu count for pg_dump is set to $cpuCount"
   postgresqlParams_pg_dump="$postgresqlParams_pg_dump --jobs=$cpuCount"
 fi
 
 # dump_all_databases
 #provede dumpy vsech existujicich databazi
-for database in ${backupARRAY[@]}
-do
+for database in ${backupARRAY[@]}; do
   # don't process ignored databases
-  for ignoredDatabase in ${ignoredDatabases}
-  do
-    if [[ "$database" = "$ignoredDatabase" ]]
-    then
+  for ignoredDatabase in ${ignoredDatabases}; do
+    if [[ "$database" = "$ignoredDatabase" ]]; then
       LogWarning "Skipped dump of ignored database $database"
       continue 2
     fi
   done
-  
+
   backupPath="$backupDir/$database/$todayDate"
   CheckDir "$backupPath"
-  
+
   # bezne zalohovani bez vynechavani - vcetne pripadne databaze zabbixu
   ${postgresqlCommandPrefix}pg_dump -U"$postgresqlUser" ${postgresqlParams_pg_dump} \
-		-w --dbname="$database" --format=directory --no-owner --file="$backupPath/$todayTime"
+    -w --dbname="$database" --format=directory --no-owner --file="$backupPath/$todayTime"
   RvLog "Created dump of postgresql database ($backupPath/$todayTime)"
-  
+
   # check number of backups - to prevent deleting old backups in case of problems
-	if [ "$(find "$backupDir/$database" -maxdepth 1 -mindepth 1 -type d | wc -l)" -gt "$backupLimit" ]
-	then
+  if [ "$(find "$backupDir/$database" -maxdepth 1 -mindepth 1 -type d | wc -l)" -gt "$backupLimit" ]; then
     # remove old backups - keep $backupLimit only
     find "$backupDir/$database" -maxdepth 1 -mindepth 1 -type d -mtime +"$backupLimit" \
-			-exec rm -rf {} \;
+      -exec rm -rf {} \;
     RvLog "Old backups removed from ($backupDir/$database)"
   fi
 done
@@ -375,12 +348,11 @@ backupPath="$backupDir/roles/"
 CheckDir "$backupPath"
 
 ${postgresqlCommandPrefix}pg_dumpall -U"$postgresqlUser" ${postgresqlParams_pg_dumpall} \
-		-w --globals-only --file="$backupPath/roles-$todayDate.sql"
+  -w --globals-only --file="$backupPath/roles-$todayDate.sql"
 RvLog "Created dump of postgresql database ($backupPath/roles-$todayDate.sql)"
-  
+
 # check number of backups - to prevent deleting old backups in case of problems
-if [ "$(find "$backupPath" -maxdepth 1 -mindepth 1 -type f | wc -l)" -gt "$backupLimit" ]
-then
+if [ "$(find "$backupPath" -maxdepth 1 -mindepth 1 -type f | wc -l)" -gt "$backupLimit" ]; then
   # remove old backups - keep $backupLimit only
   find "$backupPath" -maxdepth 1 -mindepth 1 -type f -mtime +"$backupLimit" \
     -exec rm -f {} \;
