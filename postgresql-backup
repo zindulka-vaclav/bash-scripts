@@ -3,14 +3,14 @@
 #provadi postgresql dumpy vsech databazi - vyzaduje uzivatele postgres pristupneho heslem
 
 # set pipes to fail after first error, preserving last return value of failed process
-set -eo pipefail
+set -euo pipefail
 
 # set all parameters passed during execution of the script as single parameters
 set -- "$@"
 
 VERSION_MAJOR=1
 VERSION_MINOR=1
-VERSION_PATCH=0
+VERSION_PATCH=1
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # Declare_variables
@@ -158,22 +158,32 @@ write_config() {
 
 # Process_parameters
 while [ "$#" -gt 0 ]; do
+  parameter="${1:-UNDEFINED}"
+
   # PARAMETERS
   # print version and exit
-  if [ "$1" = "-V" ] || [ "$1" = "--version" ]; then
+  if [ "$parameter" = "-V" ] || [ "$parameter" = "--version" ]; then
     echo "$VERSION"
     exit 0
     # print help and exit
-  elif [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+  elif [ "$parameter" = "-h" ] || [ "$parameter" = "--help" ]; then
     Usage
     exit 0
     # instance name
-  elif [ "$1" = "-i" ]; then
+  elif [ "$parameter" = "-i" ]; then
     # load config file parameter
     shift
 
+    nextParameter="${1:-UNDEFINED}"
+
+    if [ "$nextParameter" = "UNDEFINED" ]; then
+      LogError "Instance name parameter is missing"
+      Usage
+      exit 1
+    fi
+
     # replace blanks with underscores in instance name
-    instanceName="${1// /_}"
+    instanceName="${nextParameter// /_}"
 
     # overwrite config file
     configFile="$configDir/$scriptName-$instanceName.conf"
@@ -183,25 +193,25 @@ while [ "$#" -gt 0 ]; do
 
     LogWarning "Processing instance $instanceName"
     LogWarning "Defined alternative config file $configFile"
-  elif [ "$1" = "--db-name" ]; then
+  elif [ "$parameter" = "--db-name" ]; then
     # load config file parameter
     shift
 
-    databaseName="$1"
+    databaseName="$parameter"
 
     LogWarning "Processing only database $databaseName"
   # OPTIONS
-  elif [ "$1" = "-x" ]; then
-    LogWarning "Detected parameter $1 for bash debug output of the script"
+  elif [ "$parameter" = "-x" ]; then
+    LogWarning "Detected parameter $parameter for bash debug output of the script"
     set -x
-  elif [ "$1" = "-d" ]; then
-    LogWarning "Detected parameter $1 for debug output of log messages"
+  elif [ "$parameter" = "-d" ]; then
+    LogWarning "Detected parameter $parameter for debug output of log messages"
     DEBUG_OUTPUT="true"
-  elif [ "$1" = "-v" ]; then
-    LogWarning "Detected parameter $1 for verbose output of log messages"
+  elif [ "$parameter" = "-v" ]; then
+    LogWarning "Detected parameter $parameter for verbose output of log messages"
     verbose=1
-  else
-    LogError "Unknown parameter detected: $1"
+  elif [ "$parameter" != "UNDEFINED" ]; then
+    LogError "Unknown parameter detected: $parameter"
     Usage
     exit 1
   fi

@@ -1,23 +1,14 @@
 #!/bin/bash
 
+set -euo pipefail
+
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=4
+VERSION_PATCH=5
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 #inicializacni script pro nahrani a nastaveni rsync stahovani na server
 sbinDir="/usr/local/sbin"
-
-# pri predani parametru -x provede zapnuti debug logu
-if [ "$1" = "-x" ]; then
-  set -x
-fi
-
-# vypsani verze
-if [ "$1" = "-V" ] || [ "$1" = "--version" ]; then
-  echo "$VERSION"
-  exit 0
-fi
 
 #_PROMENNE
 scriptName="initialize"
@@ -29,27 +20,29 @@ DEBUG_OUTPUT="false"
 
 # Process_parameters
 while [ "$#" -gt 0 ]; do
+  parameter="${1:UNDEFINED}"
+
   # PARAMETERS
   # print version and exit
-  if [ "$1" = "-V" ] || [ "$1" = "--version" ]; then
+  if [ "$parameter" = "-V" ] || [ "$parameter" = "--version" ]; then
     echo "$VERSION"
     exit 0
     # print help and exit
-  elif [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+  elif [ "$parameter" = "-h" ] || [ "$parameter" = "--help" ]; then
     Usage
     exit 0
   # OPTIONS
-  elif [ "$1" = "-x" ]; then
-    LogWarning "Detected parameter $1 for bash debug output of the script"
+  elif [ "$parameter" = "-x" ]; then
+    LogWarning "Detected parameter $parameter for bash debug output of the script"
     set -x
-  elif [ "$1" = "-d" ]; then
-    LogWarning "Detected parameter $1 for debug output of log messages"
+  elif [ "$parameter" = "-d" ]; then
+    LogWarning "Detected parameter $parameter for debug output of log messages"
     DEBUG_OUTPUT="true"
-  elif [ "$1" = "-v" ]; then
-    LogWarning "Detected parameter $1 for verbose output of log messages"
+  elif [ "$parameter" = "-v" ]; then
+    LogWarning "Detected parameter $parameter for verbose output of log messages"
     verbose=1
-  else
-    LogError "Unknown parameter detected: $1"
+  elif [ "$parameter" != "UNDEFINED" ]; then
+    LogError "Unknown parameter detected: $parameter"
     Usage
     exit 1
   fi

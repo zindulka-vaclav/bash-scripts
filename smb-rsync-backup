@@ -2,11 +2,15 @@
 # smb-rsync-backup - backup directories to smb share
 # mount command is defined in config file
 
-set -eo pipefail
+# set pipes to fail after first error, preserving last return value of failed process
+set -euo pipefail
+
+# set all parameters passed during execution of the script as single parameters
+set -- "$@"
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=4
+VERSION_PATCH=5
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # Declare_variables
@@ -32,7 +36,8 @@ verbose=0
 # Declare_variables
 
 # Load_functions
-. $scriptDir/funkce
+#nacteni definice funkci Log,LogError,RvLog,StopProcessing z knihovny
+source $scriptDir/funkce
 LogDebug "Sourced common script funkce"
 LogInfo "script ($scriptName) - zacatek"
 echo "$$" >"${startFile:UNDEFINED}"
@@ -106,27 +111,29 @@ write_config() {
 
 # Process_parameters
 while [ "$#" -gt 0 ]; do
+  parameter="${1:-UNDEFINED}"
+
   # PARAMETERS
   # print version and exit
-  if [ "$1" = "-V" ] || [ "$1" = "--version" ]; then
+  if [ "$parameter" = "-V" ] || [ "$parameter" = "--version" ]; then
     echo "$VERSION"
     exit 0
     # print help and exit
-  elif [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+  elif [ "$parameter" = "-h" ] || [ "$parameter" = "--help" ]; then
     Usage
     exit 0
   # OPTIONS
-  elif [ "$1" = "-x" ]; then
-    LogWarning "Detected parameter $1 for bash debug output of the script"
+  elif [ "$parameter" = "-x" ]; then
+    LogWarning "Detected parameter $parameter for bash debug output of the script"
     set -x
-  elif [ "$1" = "-d" ]; then
-    LogWarning "Detected parameter $1 for debug output of log messages"
+  elif [ "$parameter" = "-d" ]; then
+    LogWarning "Detected parameter $parameter for debug output of log messages"
     DEBUG_OUTPUT="true"
-  elif [ "$1" = "-v" ]; then
-    LogWarning "Detected parameter $1 for verbose output of log messages"
+  elif [ "$parameter" = "-v" ]; then
+    LogWarning "Detected parameter $parameter for verbose output of log messages"
     verbose=1
-  else
-    LogError "Unknown parameter detected: $1"
+  elif [ "$parameter" != "UNDEFINED" ]; then
+    LogError "Unknown parameter detected: $parameter"
     Usage
     exit 1
   fi
@@ -135,12 +142,12 @@ while [ "$#" -gt 0 ]; do
 done
 # Process_parameters
 
-if [ ! -e /etc/cron.d/smb-rsync-backup ]; then
+if [ ! -e "$cronFile" ]; then
   {
     echo "# daily execution of smb-rsync-backup"
     echo "0 4 * * * root $sbinDir/smb-rsync-backup &>$outputFile"
-  } >/etc/cron.d/smb-rsync-backup
-  RvLog "Created cron file (/etc/cron.d/smb-rsync-backup)"
+  } >"$cronFile"
+  RvLog "Created new cron file $cronFile for $scriptName"
 fi
 
 # load_config_file
