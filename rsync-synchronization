@@ -9,7 +9,7 @@ set -- "$@"
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=2
+VERSION_PATCH=3
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # Declare_variables
@@ -208,7 +208,7 @@ for syncFolder in "${listOfFolders[@]}"; do
   LogInfo "rsync - spusteni zalohy ($syncFolder) do ($targetSyncFolder)"
   if [ "$verbose" -eq 1 ]; then
     rsync -e "ssh -o StrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null" "$rsyncOptions" \
-      --delete --bwlimit=32000 --chmod=Dug+rwx,Do-rwx,Fug+rw,Fo-rw "$syncFolder" "$targetSyncFolder"
+      --delete --bwlimit=32000 "$syncFolder" "$targetSyncFolder"
 
     if [ "$?" -ne 0 ]; then
       LogError "rsync - ($syncFolder) do ($targetSyncFolder) skoncil s chybou"
@@ -217,7 +217,7 @@ for syncFolder in "${listOfFolders[@]}"; do
     fi
   else
     rsync -e "ssh -o StrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null" "$rsyncOptions" \
-      --delete --bwlimit=32000 --chmod=Dug+rwx,Do-rwx,Fug+rw,Fo-rw "$syncFolder" "$targetSyncFolder" >/dev/null
+      --delete --bwlimit=32000 "$syncFolder" "$targetSyncFolder" >/dev/null
 
     if [ "$?" -ne 0 ]; then
       LogError "rsync - ($syncFolder) do ($targetSyncFolder) skoncil s chybou"
