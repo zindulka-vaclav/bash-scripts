@@ -71,6 +71,7 @@ if [ ! -e "$cronFile" ]; then
   RvLog "Created new cron file $cronFile for $scriptName"
 else
   echo "Cron file exists"
+  sed -i -e 's/\&>/> /g' "$cronFile"
 fi
 # write_cron_file
 

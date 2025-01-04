@@ -148,6 +148,8 @@ if [ ! -e "$cronFile" ]; then
     echo "0 2 * * * root flock -n $pidDir/zabbix-sync.lock $sbinDir/zabbix-sync > $outputFile"
   } >"$cronFile"
   RvLog "zapsano spousteni zabbix-sync scriptu do cronu $cronFile"
+else
+  sed -i -e 's/\&>/> /g' "$cronFile"
 fi
 
 #nacteni $configFile, pripadne zapsani defaultniho

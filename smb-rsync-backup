@@ -146,6 +146,8 @@ if [ ! -e "$cronFile" ]; then
     echo "0 4 * * * root $sbinDir/smb-rsync-backup > $outputFile"
   } >"$cronFile"
   RvLog "Created new cron file $cronFile for $scriptName"
+else
+  sed -i -e 's/\&>/> /g' "$cronFile"
 fi
 
 # load_config_file

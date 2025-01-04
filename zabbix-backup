@@ -109,6 +109,8 @@ if [ ! -e "$cronFile" ]; then
     echo "0 1 * * * root $sbinDir/zabbix-backup > $outputFile"
   } >"$cronFile"
   RvLog "zapsano spousteni zabbix-backup scriptu do cronu $cronFile"
+else
+  sed -i -e 's/\&>/> /g' "$cronFile"
 fi
 
 #nacteni $configFile, pripadne zapsani defaultniho
