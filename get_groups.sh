@@ -6,7 +6,7 @@ set -o pipefail
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=0
+VERSION_PATCH=1
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 #LIST
@@ -194,7 +194,7 @@ fi
 
 # vytvoreni tabulky pro nahrani ip adres vsech klientu - POSTGRESQL - CREATE TABLE
 if ! psql -U"$psqlUser" "$psqlDatabase"\
-	-c "CREATE TABLE IF NOT EXISTS adminus_ips_get (ip varchar(40));" &> /dev/null
+	-c "CREATE TABLE IF NOT EXISTS adminus_ips_get (ip varchar(40));" > /dev/null
 then
 	LogError "Problem pri tvorbe tabulky adminus_ips_get v postgresql databazi: ($psqlDatabase) pod uzivatelem: ($psqlUser)"
 	StopProcessing

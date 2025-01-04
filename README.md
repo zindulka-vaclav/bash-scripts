@@ -1,4 +1,5 @@
 # scripty pro zalohovani
+
 - scripty umoznuji hlidani pomoci zabbixove sablony
 - `git clone https://gitlab.com/zindulka.vaclav/bash-scripts.git /usr/local/bash-scripts`
 - staci stahnout script initialize, ktery provede git clone do `/usr/local/bash-scripts` - cestu zachovavat
@@ -8,3 +9,9 @@
   - zapise se konfiguracni soubor do `/usr/local/etc/` - nutno upravit a povolit spousteni
   - zapise se cron soubor do `/etc/cron.d/`
 - na server, kam scripty nasadis, aplikuj sablonu `Tlapnet Active Scripty` - budou se hlidat
+
+## nahrazeni repozitare
+
+```bash
+git -C /usr/local/bash-scripts remote set-url origin https://gitlab.com/zindulka.vaclav/bash-scripts.git && git pull
+```

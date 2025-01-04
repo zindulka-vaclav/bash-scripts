@@ -63,13 +63,15 @@ fi
 
 
 # check_cron_file
-if [ ! -e /etc/cron.d/check-server ]
+if [ ! -e "$cronFile" ]
 then
 	{ 
 		echo "# daily check-server script execution"
 		echo "0 20 * * * root /bin/bash -x $scriptDir/check-server &>$logDir/check-server.log"
-	} > /etc/cron.d/check-server
+	} > "$cronFile"
 	RvLog "Created cron file /etc/cron.d/check-server"
+else
+  sed -i -e 's/\&>/> /g' "$cronFile"
 fi
 # check_cron_file
 

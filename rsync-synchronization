@@ -9,7 +9,7 @@ set -- "$@"
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=3
+VERSION_PATCH=4
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # Declare_variables
@@ -132,9 +132,12 @@ if [ ! -e "${cronFile}" ]; then
   # create new cron file
   {
     echo "# execute ${scriptName} daily - default instance"
-    echo "0 2 * * * root ${sbinDir}/${scriptName} &>${outputFile}"
+    echo "0 2 * * * root ${sbinDir}/${scriptName} > ${outputFile}"
   } >"${cronFile}"
   RvLog "Created new cron file ${cronFile} for ${scriptName}"
+else
+  echo "Cron file exists"
+  sed -i -e 's/\&>/> /g' "${cronFile}"
 fi
 # write_cron_file
 

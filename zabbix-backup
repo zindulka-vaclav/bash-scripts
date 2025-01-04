@@ -16,7 +16,7 @@ set -eo pipefail
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=8
+VERSION_PATCH=9
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # pri predani parametru -x provede zapnuti debug logu
@@ -106,9 +106,11 @@ if [ ! -e "$cronFile" ]; then
   #vytvori radek, ktery spousti dany script ve 2:00 a kompletni debug vystup se uklada do souboru ve /var/log
   {
     echo "#denni spousteni zabbix-backup"
-    echo "0 1 * * * root $sbinDir/zabbix-backup &>$outputFile"
+    echo "0 1 * * * root $sbinDir/zabbix-backup > $outputFile"
   } >"$cronFile"
   RvLog "zapsano spousteni zabbix-backup scriptu do cronu $cronFile"
+else
+  sed -i -e 's/\&>/> /g' "$cronFile"
 fi
 
 #nacteni $configFile, pripadne zapsani defaultniho
