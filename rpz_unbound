@@ -76,14 +76,16 @@ fi
 
 #_CRON
 #pokud neni zaznam pro rpz_unbound
-if [ ! -e /etc/cron.d/rpz_unbound ]
+if [ ! -e "$cronFile" ]
 then
 	#vytvori radek, ktery spousti dany script ve 2:00 a kompletni debug vystup se uklada do souboru ve /var/log
 	{ 
 		echo "#tydenni spousteni rpz_unbound"
 		echo "0 2 * * 2 root $sbinDir/rpz_unbound > $outputFile"
-	} > /etc/cron.d/rpz_unbound
+	} > "$cronFile"
 	RvLog "zapsano spousteni rpz_unbound scriptu do cronu"
+else
+  sed -i -e 's/\&>/> /g' "$cronFile"
 fi
 
 # _FUNCTIONS

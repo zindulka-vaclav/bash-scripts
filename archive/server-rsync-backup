@@ -127,7 +127,7 @@ then
 	rm /etc/cron.daily/"$scriptName"
 	LogError "provedeno odstraneni automatickeho spousteni z cronu"
 else
-	LogInfo "server se uz automaticky nespoust z cron.daily"
+	LogInfo "server se uz automaticky nespousti z cron.daily"
 fi
 
 #pri prvotnim spusteni je script defaultne disablovany

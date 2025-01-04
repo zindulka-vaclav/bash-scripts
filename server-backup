@@ -73,14 +73,16 @@ write(){
 
 #_SERVER_BACKUP_CRON
 #pokud neni zaznam pro server-backup
-if [ ! -e /etc/cron.d/server-backup ]
+if [ ! -e "$cronFile" ]
 then
 	#vytvori radek, ktery spousti dany script ve 20:00 a kompletni debug vystup se uklada do souboru ve /var/log
 	{ 
 		echo "#denni spousteni server-backup"
 		echo "0 22 * * * root $sbinDir/server-backup > $outputFile"
-	} > /etc/cron.d/server-backup
+	} > "$cronFile"
 	RvLog "zapsano spousteni server-backup scriptu do cronu roota"
+else
+  sed -i -e 's/\&>/> /g' "$cronFile"
 fi
 
 
