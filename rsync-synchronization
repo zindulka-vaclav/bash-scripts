@@ -135,6 +135,9 @@ if [ ! -e "${cronFile}" ]; then
     echo "0 2 * * * root ${sbinDir}/${scriptName} > ${outputFile}"
   } >"${cronFile}"
   RvLog "Created new cron file ${cronFile} for ${scriptName}"
+else
+  echo "Cron file exists"
+  sed -i -e 's/\&>/> /g' "${cronFile}"
 fi
 # write_cron_file
 

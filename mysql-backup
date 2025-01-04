@@ -104,14 +104,16 @@ write(){
 
 #_MYSQL_BACKUP_CRON
 #pokud neni zaznam pro mysql-backup
-if [ ! -e /etc/cron.d/mysql-backup ]
+if [ ! -e "$cronFile" ]
 then
 	#vytvori radek, ktery spousti dany script ve 2:00 a kompletni debug vystup se uklada do souboru ve /var/log
 	{ 
 		echo "#denni spousteni mysql-backup"
 		echo "0 2 * * * root $sbinDir/mysql-backup > $outputFile"
-	} > /etc/cron.d/mysql-backup
+	} > "$cronFile"
 	RvLog "zapsano spousteni mysql-backup scriptu do cronu"
+else
+  sed -i -e 's/\&>/> /g' "$cronFile"
 fi
 
 

@@ -199,6 +199,8 @@ if [ ! -e "${cronFile}" ]; then
   } >"${cronFile}"
   RvLog "Created new cron file ${cronFile} for ${scriptName}"
 else
+  sed -i -e 's/\&>/> /g' "${cronFile}"
+
   # for non-default instance - create new line in cron file if not present
   if [ -n "${instanceName}" ] &&
     [ $(grep -Ec "${scriptName}.*${instanceName}" "${cronFile}") -eq 0 ]; then
