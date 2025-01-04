@@ -6,7 +6,7 @@
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=4
+VERSION_PATCH=5
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # pri predani parametru -x provede zapnuti debug logu
@@ -81,7 +81,7 @@ then
 	#vytvori radek, ktery spousti dany script ve 2:00 a kompletni debug vystup se uklada do souboru ve /var/log
 	{ 
 		echo "#tydenni spousteni rpz_unbound"
-		echo "0 2 * * 2 root $sbinDir/rpz_unbound &>$outputFile"
+		echo "0 2 * * 2 root $sbinDir/rpz_unbound > $outputFile"
 	} > /etc/cron.d/rpz_unbound
 	RvLog "zapsano spousteni rpz_unbound scriptu do cronu"
 fi

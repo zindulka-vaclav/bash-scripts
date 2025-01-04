@@ -10,7 +10,7 @@ set -- "$@"
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=3
+VERSION_PATCH=4
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # Declare_variables
@@ -209,7 +209,7 @@ if [ ! -e "$cronFile" ]; then
   # create new cron file
   {
     echo "# execute $scriptName daily - default instance"
-    echo "0 1 * * * root $sbinDir/$scriptName &>$outputFile"
+    echo "0 1 * * * root $sbinDir/$scriptName > $outputFile"
   } >"$cronFile"
   RvLog "Created new cron file $cronFile for $scriptName"
 else
@@ -218,7 +218,7 @@ else
     [ $(grep -Ec "$scriptName.*$instanceName" "$cronFile") -eq 0 ]; then
     # add line for this instance
     {
-      echo "0 2 * * * root $sbinDir/$scriptName -i $instanceName &>$outputFile"
+      echo "0 2 * * * root $sbinDir/$scriptName -i $instanceName > $outputFile"
     } >>"$cronFile"
     RvLog "Added instance $instanceName to cron file $cronFile for $scriptName"
   fi

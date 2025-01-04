@@ -10,7 +10,7 @@ set -- "$@"
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=5
+VERSION_PATCH=6
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # Declare_variables
@@ -143,7 +143,7 @@ done
 if [ ! -e "$cronFile" ]; then
   {
     echo "# daily execution of smb-rsync-backup"
-    echo "0 4 * * * root $sbinDir/smb-rsync-backup &>$outputFile"
+    echo "0 4 * * * root $sbinDir/smb-rsync-backup > $outputFile"
   } >"$cronFile"
   RvLog "Created new cron file $cronFile for $scriptName"
 fi
