@@ -4,7 +4,7 @@ set -eo pipefail
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=7
+VERSION_PATCH=8
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 #inicializacni script pro nahrani a nastaveni rsync stahovani na server
@@ -24,11 +24,6 @@ source "$scriptDir/funkce"
 
 CheckDir "$pidDir"
 CheckDir "$logDir"
-
-LogInfo "Start of script $scriptName"
-
-echo "$$" >"$startFile"
-RvLog "start file set to ($$)"
 
 # Process_parameters
 while [ "$#" -gt 0 ]; do
@@ -60,6 +55,11 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 # Process_parameters
+
+LogInfo "Start of script $scriptName"
+
+echo "$$" >"$startFile"
+RvLog "start file set to ($$)"
 
 # write_cron_file
 if [ ! -e "$cronFile" ]; then

@@ -9,7 +9,7 @@ set -- "$@"
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=4
+VERSION_PATCH=5
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # Declare_variables
@@ -39,10 +39,6 @@ verbose=0
 # load definition of functions LogInfo, LogWarning, LogError,
 # RvLog, StopProcessing z knihovny
 source "${scriptDir}/funkce"
-LogDebug "Sourced common script funkce"
-LogInfo "script (${scriptName}) - start"
-echo "$$" >"${startFile}"
-LogInfo "(${startFile}) set to ($$)"
 
 # Define_functions
 # functions_Usage
@@ -126,6 +122,10 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 # process_parameters
+
+LogInfo "script (${scriptName}) - start"
+echo "$$" >"${startFile}"
+LogInfo "(${startFile}) set to ($$)"
 
 # write_cron_file
 if [ ! -e "${cronFile}" ]; then
