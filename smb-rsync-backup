@@ -10,7 +10,7 @@ set -- "$@"
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=6
+VERSION_PATCH=7
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # Declare_variables
@@ -38,10 +38,6 @@ verbose=0
 # Load_functions
 #nacteni definice funkci Log,LogError,RvLog,StopProcessing z knihovny
 source $scriptDir/funkce
-LogDebug "Sourced common script funkce"
-LogInfo "script ($scriptName) - zacatek"
-echo "$$" >"${startFile:UNDEFINED}"
-LogInfo "($startFile) set to ($$)"
 # Load_functions
 
 # Define_functions
@@ -139,6 +135,10 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 # Process_parameters
+
+LogInfo "script ($scriptName) - zacatek"
+echo "$$" >"${startFile:UNDEFINED}"
+LogInfo "($startFile) set to ($$)"
 
 if [ ! -e "$cronFile" ]; then
   {
