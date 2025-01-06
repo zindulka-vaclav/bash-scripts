@@ -1,0 +1,242 @@
+zabbix_export:
+  version: '6.0'
+  date: '2025-01-06T03:02:21Z'
+  groups:
+    - uuid: 38973fe194c34eed82cbd5b6c27d9407
+      name: Servery
+  templates:
+    - uuid: b6876dea9b214fb59214a1d103c0903e
+      template: 'Servery Active Scripty'
+      name: 'Servery Active Scripty'
+      groups:
+        - name: Servery
+      items:
+        - uuid: 4f2a8f878d614a64b479828666a8869a
+          name: 'Scripty - Check error files'
+          type: ZABBIX_ACTIVE
+          key: 'system.run[find /var/spool/scripty/ -name "*.err"]'
+          delay: 5m
+          trends: '0'
+          value_type: TEXT
+          description: 'Check presence of error files'
+          tags:
+            - tag: Application
+              value: Scripty
+          triggers:
+            - uuid: a7ca3dc4bfaf46818ef0e5406caa35f1
+              expression: 'length(last(/Servery Active Scripty/system.run[find /var/spool/scripty/ -name "*.err"]))<>0'
+              name: 'Scripty - Error file detected {ITEM.LASTVALUE} @ {HOST.NAME}'
+              opdata: '{ITEM.LASTVALUE}'
+              priority: HIGH
+              description: 'Detected error file'
+              manual_close: 'YES'
+        - uuid: 9a24392e554842e287a6b9e4e8278794
+          name: 'Bash scripts initialize.stop check existence'
+          type: ZABBIX_ACTIVE
+          key: 'vfs.file.exists[/var/spool/scripty/initialize.stop]'
+          description: 'Check if bash scripts are initialized properly'
+          tags:
+            - tag: Application
+              value: bash-scripts
+          triggers:
+            - uuid: 8dee7df7e5514ea4821bbb588792a9e5
+              expression: 'last(/Servery Active Scripty/vfs.file.exists[/var/spool/scripty/initialize.stop])=0'
+              name: 'Scripty - not properly initialized @ {HOST.NAME}'
+              opdata: '{ITEM.LASTVALUE}'
+              priority: HIGH
+              manual_close: 'YES'
+              tags:
+                - tag: Application
+                  value: bash-scripts
+      discovery_rules:
+        - uuid: 56e0e6ffdaa94b79ae6fb84674c3fc48
+          name: 'Discover script files for versions check'
+          type: ZABBIX_ACTIVE
+          key: 'system.run[find /usr/local/bash-scripts -maxdepth 1 -type f | sort -u]'
+          delay: 10m
+          filter:
+            conditions:
+              - macro: '{#FILE}'
+                value: .gitignore
+                operator: NOT_MATCHES_REGEX
+                formulaid: A
+              - macro: '{#FILE}'
+                value: debug
+                operator: NOT_MATCHES_REGEX
+                formulaid: B
+              - macro: '{#FILE}'
+                value: funkce
+                operator: NOT_MATCHES_REGEX
+                formulaid: C
+              - macro: '{#FILE}'
+                value: history_trends.sql
+                operator: NOT_MATCHES_REGEX
+                formulaid: D
+              - macro: '{#FILE}'
+                value: README.md
+                operator: NOT_MATCHES_REGEX
+                formulaid: E
+              - macro: '{#FILE}'
+                value: template.xml
+                operator: NOT_MATCHES_REGEX
+                formulaid: F
+          lifetime: 1d
+          description: |
+            Doscover all script files in bash-scripts folder for version checks 
+            
+            https://gitlab.com/zindulka.vaclav/bash-scripts
+          item_prototypes:
+            - uuid: 8b2c2b3f98834029bbec8138023549f0
+              name: 'Script {#FILE} basename'
+              type: ZABBIX_ACTIVE
+              key: 'system.run[basename {#FILE}]'
+              delay: 10m
+              trends: '0'
+              value_type: TEXT
+              description: 'Generate basename of each script'
+              tags:
+                - tag: Application
+                  value: bash-scripts
+            - uuid: 51b3464b3ba44726aeacd83858a476fb
+              name: 'Script {#FILE} version'
+              type: ZABBIX_ACTIVE
+              key: 'system.run[{#FILE} -V]'
+              delay: 10m
+              trends: '0'
+              value_type: TEXT
+              description: 'Check version of each script'
+              tags:
+                - tag: Application
+                  value: bash-scripts
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var lld = [];
+                  var lines = value.split("\n");
+                  var lines_num = lines.length;
+                  for (i = 0; i < lines_num; i++)
+                  {
+                    var row = {};
+                    row["{#FILE}"] = lines[i]
+                    lld.push(row);
+                  }
+                  return JSON.stringify(lld);
+        - uuid: 3e1a153090614753930f9d011c49f0c3
+          name: 'Discover script files'
+          type: ZABBIX_ACTIVE
+          key: 'system.run[find /var/spool/scripty -maxdepth 1 -type f | sed -e ''s/\.\w\+$//g'' | sort -u]'
+          delay: 10m
+          lifetime: 1d
+          description: 'Doscover all files produced during execution of bash-scripts from https://gitlab.com/zindulka.vaclav/bash-scripts project'
+          item_prototypes:
+            - uuid: b6f21de15a8a4c69ba68ab5ed5eb3814
+              name: 'Error during execution of {#FILE}'
+              type: ZABBIX_ACTIVE
+              key: 'vfs.file.exists[{#FILE}.err]'
+              history: 7d
+              trends: 30d
+              description: 'Checks presence of error file for each script'
+              preprocessing:
+                - type: MATCHES_REGEX
+                  parameters:
+                    - '.*.err$'
+                  error_handler: DISCARD_VALUE
+              tags:
+                - tag: Application
+                  value: bash-scripts
+              trigger_prototypes:
+                - uuid: af52c15f98ed4c0d89cb45174882b318
+                  expression: 'last(/Servery Active Scripty/vfs.file.exists[{#FILE}.err])=1'
+                  name: 'Scripty - {#FILE} error during execution @ {HOST.NAME}'
+                  opdata: '{ITEM.LASTVALUE}'
+                  priority: DISASTER
+                  description: 'Script finished with error, check corresponding log file at /var/log/scripty/'
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Application
+                      value: bash-scripts
+            - uuid: fd7a07095cc14a6b8f6a11c117cc50fe
+              name: 'Check creation time of {#FILE}.start'
+              type: ZABBIX_ACTIVE
+              key: 'vfs.file.time[{#FILE}.start]'
+              history: 1w
+              trends: 30d
+              units: unixtime
+              description: 'Checks time of last execution of the script'
+              tags:
+                - tag: Application
+                  value: bash-scripts
+              trigger_prototypes:
+                - uuid: ce699ae4f5a8491eb5bae1d4b17fbe35
+                  expression: 'last(/Servery Active Scripty/vfs.file.time[{#FILE}.start]) < now() - 86400'
+                  name: 'Scripty - {#FILE} didn''t start in last 24h @ {HOST.NAME}'
+                  opdata: '{ITEM.LASTVALUE}'
+                  priority: HIGH
+                  description: 'Script didn''t start for more than 24 hours'
+                  manual_close: 'YES'
+                  dependencies:
+                    - name: 'Scripty - {#FILE} didn''t start in last 48h @ {HOST.NAME}'
+                      expression: 'last(/Servery Active Scripty/vfs.file.time[{#FILE}.start]) < now() - 172800'
+                  tags:
+                    - tag: Application
+                      value: bash-scripts
+                - uuid: b17c184ffde14beebaac6f9cb7299674
+                  expression: 'last(/Servery Active Scripty/vfs.file.time[{#FILE}.start]) < now() - 172800'
+                  name: 'Scripty - {#FILE} didn''t start in last 48h @ {HOST.NAME}'
+                  opdata: '{ITEM.LASTVALUE}'
+                  priority: DISASTER
+                  description: 'Script didn''t start for too long'
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Application
+                      value: bash-scripts
+            - uuid: a765a081f4d24fa5b5affca6e78255ae
+              name: 'Check creation time of {#FILE}.stop'
+              type: ZABBIX_ACTIVE
+              key: 'vfs.file.time[{#FILE}.stop]'
+              history: 1w
+              trends: 30d
+              units: unixtime
+              description: 'Checks time of last completion of the script'
+              tags:
+                - tag: Application
+                  value: bash-scripts
+          trigger_prototypes:
+            - uuid: 1b3e160d459b4c2fba44dc171af5c64e
+              expression: 'last(/Servery Active Scripty/vfs.file.time[{#FILE}.stop]) + 86400 < last(/Servery Active Scripty/vfs.file.time[{#FILE}.start])'
+              name: 'Scripty - {#FILE} didn''t finish in last 24h @ {HOST.NAME}'
+              opdata: '{ITEM.LASTVALUE}'
+              priority: HIGH
+              description: 'Script didn''t finish in last 24 hours'
+              manual_close: 'YES'
+              dependencies:
+                - name: 'Scripty - {#FILE} didn''t finish in last 48h @ {HOST.NAME}'
+                  expression: 'last(/Servery Active Scripty/vfs.file.time[{#FILE}.stop]) + 172800 < last(/Servery Active Scripty/vfs.file.time[{#FILE}.start])'
+              tags:
+                - tag: Application
+                  value: bash-scripts
+            - uuid: 9326e9dfad0f40c6bfc90a08bcfda6ed
+              expression: 'last(/Servery Active Scripty/vfs.file.time[{#FILE}.stop]) + 172800 < last(/Servery Active Scripty/vfs.file.time[{#FILE}.start])'
+              name: 'Scripty - {#FILE} didn''t finish in last 48h @ {HOST.NAME}'
+              opdata: '{ITEM.LASTVALUE}'
+              priority: DISASTER
+              description: 'Script didn''t finish in last 48 hours'
+              manual_close: 'YES'
+              tags:
+                - tag: Application
+                  value: bash-scripts
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var lld = [];
+                  var lines = value.split("\n");
+                  var lines_num = lines.length;
+                  for (i = 0; i < lines_num; i++)
+                  {
+                    var row = {};
+                    row["{#FILE}"] = lines[i]
+                    lld.push(row);
+                  }
+                  return JSON.stringify(lld);

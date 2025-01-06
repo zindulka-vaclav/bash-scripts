@@ -25,7 +25,7 @@ set -eo pipefail
 
 VERSION_MAJOR=1
 VERSION_MINOR=1
-VERSION_PATCH=7
+VERSION_PATCH=8
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 #_PROMENNE
@@ -41,8 +41,6 @@ remoteBackupDir="zabbix-sync"
 # slozka, kam se na lokalnim serveru stahne remote zaloha - aby bylo kam sahnout, uklada se kazdou hodinu
 # do jine slozky
 localBackupDir="/root/$remoteBackupDir/$(date +%H)/"
-
-mkdir -p "/root/$remoteBackupDir"
 
 #cesta ke scriptu
 scriptDir="/usr/local/bash-scripts"
@@ -86,6 +84,8 @@ write_pgpassFile() {
   } >>"$pgpassFile"
   chmod 600 "$pgpassFile"
 }
+
+mkdir -p "/root/$remoteBackupDir"
 
 #zapise konfiguracni soubor, ze ktereho bude nasledne nacitat hodnoty
 write() {
