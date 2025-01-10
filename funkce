@@ -1,5 +1,5 @@
 #!/bin/bash
-#verze 1.0.3
+#verze 1.0.4
 #logovani
 #definice funkci pro logovani behu programu a posilani vystupu mailem
 #_LIST #_Log #_LogError #_RvLog #_StopProcessing #_CheckDir
@@ -143,13 +143,19 @@ StopProcessing() {
 
 #_CheckDir
 #zkontroluje zda existuje slozka predana jako parametr, pokud ne, tak ji vytvori
+# pro vynechani logovani lze predat druhy parametr "silent"
 CheckDir() {
   if [ -d "$1" ]; then
-    RvLog "CheckDir - slozka $1 existuje"
+    if [ "$2" != "silent" ]; then
+      RvLog "CheckDir - slozka $1 existuje"
+    fi
     return 0
   else
+    if [ "$2" != "silent" ]; then
+      RvLog "CheckDir - vytvoreni slozky $1"
+    fi
+
     mkdir -p "$1"
-    RvLog "CheckDir - vytvoreni slozky $1"
     return "$?"
   fi
 }
@@ -213,8 +219,8 @@ TestRunFile() {
 }
 
 # kontrola existence slozky pro logovani
-CheckDir "$logDir"
-CheckDir "$configDir"
+CheckDir "$logDir" "silent"
+CheckDir "$configDir" "silent"
 
 #prida datum na konec outputFile
 echo -e "\n\nstart time: $(date +%F_%H-%M)" >>"$outputFile"
