@@ -222,7 +222,9 @@ TestRunFile() {
 CheckDir "$logDir" "silent"
 CheckDir "$configDir" "silent"
 
-#prida datum na konec outputFile
-echo -e "\n\nstart time: $(date +%F_%H-%M)" >>"$outputFile"
+if [ "$1" != "-V" ] && [ "$1" != "--version" ]; then
+  #prida datum na konec outputFile
+  echo -e "\n\nstart time: $(date +%F_%H-%M)" >>"$outputFile"
+fi
 
 TestRunFile
