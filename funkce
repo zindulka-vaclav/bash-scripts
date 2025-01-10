@@ -1,5 +1,5 @@
 #!/bin/bash
-#verze 1.0.4
+#verze 1.0.5
 #logovani
 #definice funkci pro logovani behu programu a posilani vystupu mailem
 #_LIST #_Log #_LogError #_RvLog #_StopProcessing #_CheckDir
@@ -54,11 +54,6 @@ pidFile="$pidDir/${scriptName}.pid"
 
 #soubor obsahujici pid defaultniho logovaciho loopu
 defaultPid="$pidDir/default.pid"
-
-#pokud od minule zustal soubor $errorFile, tak ho odstrani
-if [ -e "$errorFile" ]; then
-  rm "$errorFile"
-fi
 
 # Define_functions
 # _LogDebug
@@ -219,6 +214,11 @@ TestRunFile() {
 }
 
 if [ "$1" != "-V" ] && [ "$1" != "--version" ]; then
+  #pokud od minule zustal soubor $errorFile, tak ho odstrani
+  if [ -e "$errorFile" ]; then
+    rm "$errorFile"
+  fi
+
   # kontrola existence slozky pro logovani
   CheckDir "$logDir" "silent"
   CheckDir "$configDir" "silent"

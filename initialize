@@ -3,8 +3,8 @@
 set -eo pipefail
 
 VERSION_MAJOR=1
-VERSION_MINOR=0
-VERSION_PATCH=9
+VERSION_MINOR=1
+VERSION_PATCH=0
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 #inicializacni script pro nahrani a nastaveni rsync stahovani na server
@@ -21,9 +21,6 @@ DEBUG_OUTPUT="false"
 #_LOGOVANI
 # nacteni konfiguracniho souboru s funkcemi
 source "$scriptDir/funkce"
-
-CheckDir "$pidDir"
-CheckDir "$logDir"
 
 # Process_parameters
 while [ "$#" -gt 0 ]; do
@@ -55,6 +52,9 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 # Process_parameters
+
+CheckDir "$pidDir"
+CheckDir "$logDir"
 
 LogInfo "Start of script $scriptName"
 
