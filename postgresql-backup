@@ -10,7 +10,7 @@ set -- "$@"
 
 VERSION_MAJOR=1
 VERSION_MINOR=1
-VERSION_PATCH=3
+VERSION_PATCH=4
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # Declare_variables
@@ -188,7 +188,7 @@ while [ "$#" -gt 0 ]; do
     LogWarning "Processing only database $databaseName"
   # OPTIONS
   elif [ "$1" = "-x" ]; then
-    LogWarning "Detected parameter $1 for bash debug output of the script"
+    echo "Detected parameter $1 for bash debug output of the script"
     set -x
   elif [ "$1" = "-d" ]; then
     LogWarning "Detected parameter $1 for debug output of log messages"

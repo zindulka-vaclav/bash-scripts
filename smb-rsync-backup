@@ -10,7 +10,7 @@ set -- "$@"
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=7
+VERSION_PATCH=8
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # Declare_variables
@@ -118,7 +118,7 @@ while [ "$#" -gt 0 ]; do
     exit 0
   # OPTIONS
   elif [ "$1" = "-x" ]; then
-    LogWarning "Detected parameter $1 for bash debug output of the script"
+    echo "Detected parameter $1 for bash debug output of the script"
     set -x
   elif [ "$1" = "-d" ]; then
     LogWarning "Detected parameter $1 for debug output of log messages"

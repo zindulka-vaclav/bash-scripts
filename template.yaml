@@ -1,6 +1,6 @@
 zabbix_export:
   version: '6.0'
-  date: '2025-01-06T03:02:21Z'
+  date: '2025-01-10T05:27:05Z'
   groups:
     - uuid: 38973fe194c34eed82cbd5b6c27d9407
       name: Servery
@@ -52,9 +52,10 @@ zabbix_export:
         - uuid: 56e0e6ffdaa94b79ae6fb84674c3fc48
           name: 'Discover script files for versions check'
           type: ZABBIX_ACTIVE
-          key: 'system.run[find /usr/local/bash-scripts -maxdepth 1 -type f | sort -u]'
+          key: 'system.run[find /usr/local/bash-scripts -maxdepth 1 -type f | sort -u | grep -Ev ".gitignore|debug|funkce|history_trends.sql|README.md|template.xml|template.yaml"]'
           delay: 10m
           filter:
+            evaltype: AND
             conditions:
               - macro: '{#FILE}'
                 value: .gitignore
@@ -80,6 +81,10 @@ zabbix_export:
                 value: template.xml
                 operator: NOT_MATCHES_REGEX
                 formulaid: F
+              - macro: '{#FILE}'
+                value: template.yaml
+                operator: NOT_MATCHES_REGEX
+                formulaid: G
           lifetime: 1d
           description: |
             Doscover all script files in bash-scripts folder for version checks 
@@ -125,10 +130,13 @@ zabbix_export:
         - uuid: 3e1a153090614753930f9d011c49f0c3
           name: 'Discover script files'
           type: ZABBIX_ACTIVE
-          key: 'system.run[find /var/spool/scripty -maxdepth 1 -type f | sed -e ''s/\.\w\+$//g'' | sort -u]'
+          key: 'system.run[find /var/spool/scripty -maxdepth 1 -type f  | sed -e ''s/\.\w\+$//g'' | sort -u]'
           delay: 10m
           lifetime: 1d
-          description: 'Doscover all files produced during execution of bash-scripts from https://gitlab.com/zindulka.vaclav/bash-scripts project'
+          description: |
+            Doscover all files produced during execution of bash-scripts from https://gitlab.com/zindulka.vaclav/bash-scripts project
+            
+            sed is for removal of .start .stop etc.
           item_prototypes:
             - uuid: b6f21de15a8a4c69ba68ab5ed5eb3814
               name: 'Error during execution of {#FILE}'
