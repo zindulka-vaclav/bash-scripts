@@ -218,13 +218,13 @@ TestRunFile() {
   fi
 }
 
-# kontrola existence slozky pro logovani
-CheckDir "$logDir" "silent"
-CheckDir "$configDir" "silent"
-
 if [ "$1" != "-V" ] && [ "$1" != "--version" ]; then
+  # kontrola existence slozky pro logovani
+  CheckDir "$logDir" "silent"
+  CheckDir "$configDir" "silent"
+
   #prida datum na konec outputFile
   echo -e "\n\nstart time: $(date +%F_%H-%M)" >>"$outputFile"
-fi
 
-TestRunFile
+  TestRunFile
+fi
