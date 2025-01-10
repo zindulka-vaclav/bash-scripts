@@ -25,7 +25,7 @@ set -eo pipefail
 
 VERSION_MAJOR=1
 VERSION_MINOR=1
-VERSION_PATCH=8
+VERSION_PATCH=9
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 #_PROMENNE
@@ -58,7 +58,6 @@ fi
 # vypsani verze
 if [ "$1" = "-V" ] || [ "$1" = "--version" ]; then
   echo "$VERSION"
-  StopProcessing
   exit 0
 fi
 
