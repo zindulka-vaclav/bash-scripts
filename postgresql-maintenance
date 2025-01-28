@@ -9,7 +9,7 @@ set -- "$@"
 
 VERSION_MAJOR=1
 VERSION_MINOR=1
-VERSION_PATCH=1
+VERSION_PATCH=2
 VERSION="${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}"
 
 # Declare_variables
@@ -116,7 +116,7 @@ write_config() {
     echo "configVersion=\"${configVersion}\""
     echo "# enable (true) / disable (false) execution of the script"
     echo "enabled=\"${enabled}\""
-    echo "# prefix for commands - keep space at the end of command"
+    echo "# prefix for commands - keep space at the end of command "
     echo "# sudo -u postgres | docker exec DOCKER_CONTAINER "
     echo "# for docker exec you have to map /var/backup in container to local dir "
     echo "postgresqlCommandPrefix=\"${postgresqlCommandPrefix}\""
@@ -284,7 +284,8 @@ fi
 for database in ${maintenanceArray[@]}; do
   LogInfo "Starting VACUUM ANALYZE of ${database}"
   if ! timeout "${postgresqlTimeout}" ${postgresqlCommandPrefix}psql -U"${postgresqlUser}" \
-    ${postgresqlParams} -w "${database}" -c "VACUUM ANALYZE;" 2>&1 | tee -a "${logFile}"; then
+    ${postgresqlParams} -w "${database}" -c "VACUUM ANALYZE;" 2>&1 | \
+    grep -v 'could not change directory to "/root": Permission denied' | tee -a "${logFile}"; then
 
     LogError "VACUUM ANALYZE of PostgreSQL database (${database}) failed"
   else
@@ -293,7 +294,8 @@ for database in ${maintenanceArray[@]}; do
 
   LogInfo "Starting vacuum freeze of ${database}"
   if ! timeout "${postgresqlTimeout}" ${postgresqlCommandPrefix}psql -U"${postgresqlUser}" \
-    ${postgresqlParams} -w "${database}" -c "VACUUM FREEZE;" 2>&1 | tee -a "${logFile}"; then
+    ${postgresqlParams} -w "${database}" -c "VACUUM FREEZE;" 2>&1 | \
+    grep -v 'could not change directory to "/root": Permission denied' | tee -a "${logFile}"; then
 
     LogError "VACUUM FREEZE of PostgreSQL database (${database}) failed"
   else
@@ -305,7 +307,8 @@ for database in ${maintenanceArray[@]}; do
     LogInfo "Starting REINDEX of ${database}"
     if ! timeout "${postgresqlTimeout}" ${postgresqlCommandPrefix}psql -U"${postgresqlUser}" \
       ${postgresqlParams} -w "${database}" -c "REINDEX DATABASE \"${database}\";" \
-      2>&1 | tee -a "${logFile}"; then
+      2>&1 | grep -v 'could not change directory to "/root": Permission denied' | \
+      tee -a "${logFile}"; then
 
       LogError "REINDEX of PostgreSQL database (${database}) failed"
     else
