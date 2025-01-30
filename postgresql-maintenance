@@ -269,7 +269,8 @@ fi
 #-c command to execute
 maintenanceArray=($(${postgresqlCommandPrefix}psql -U"${postgresqlUser}" ${postgresqlParams} \
   -w -At \
-  -c "SELECT DATNAME FROM pg_database WHERE NOT datistemplate AND datallowconn ORDER BY datname;"))
+  -c "SELECT DATNAME FROM pg_database WHERE NOT datistemplate AND datallowconn ORDER BY datname;" \
+   2> >(grep -v 'could not change directory to "/root": Permission denied' >&2)))
 if [ $? -ne 0 ]; then
   LogError "Failed to load database names from postgresql"
   exit 2
@@ -284,8 +285,7 @@ fi
 for database in ${maintenanceArray[@]}; do
   LogInfo "Starting VACUUM ANALYZE of ${database}"
   if ! timeout "${postgresqlTimeout}" ${postgresqlCommandPrefix}psql -U"${postgresqlUser}" \
-    ${postgresqlParams} -w "${database}" -c "VACUUM ANALYZE;" 2>&1 | \
-    grep -v 'could not change directory to "/root": Permission denied' | tee -a "${logFile}"; then
+    ${postgresqlParams} -w "${database}" -c "VACUUM ANALYZE;" 2> >(grep -v 'could not change directory to "/root": Permission denied' >&2) | tee -a "${logFile}"; then
 
     LogError "VACUUM ANALYZE of PostgreSQL database (${database}) failed"
   else
@@ -294,8 +294,7 @@ for database in ${maintenanceArray[@]}; do
 
   LogInfo "Starting vacuum freeze of ${database}"
   if ! timeout "${postgresqlTimeout}" ${postgresqlCommandPrefix}psql -U"${postgresqlUser}" \
-    ${postgresqlParams} -w "${database}" -c "VACUUM FREEZE;" 2>&1 | \
-    grep -v 'could not change directory to "/root": Permission denied' | tee -a "${logFile}"; then
+    ${postgresqlParams} -w "${database}" -c "VACUUM FREEZE;" 2> >(grep -v 'could not change directory to "/root": Permission denied' >&2) | tee -a "${logFile}"; then
 
     LogError "VACUUM FREEZE of PostgreSQL database (${database}) failed"
   else
@@ -307,8 +306,7 @@ for database in ${maintenanceArray[@]}; do
     LogInfo "Starting REINDEX of ${database}"
     if ! timeout "${postgresqlTimeout}" ${postgresqlCommandPrefix}psql -U"${postgresqlUser}" \
       ${postgresqlParams} -w "${database}" -c "REINDEX DATABASE \"${database}\";" \
-      2>&1 | grep -v 'could not change directory to "/root": Permission denied' | \
-      tee -a "${logFile}"; then
+      2> >(grep -v 'could not change directory to "/root": Permission denied' >&2) | tee -a "${logFile}"; then
 
       LogError "REINDEX of PostgreSQL database (${database}) failed"
     else
