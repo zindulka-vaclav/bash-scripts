@@ -240,7 +240,7 @@ if [ -f "$configFile" ]; then
   . "$configFile"
   LogInfo "Loaded configuration file ($configFile)"
 else
-  write
+  write_config
   . "$configFile"
   LogError "Created configuration file ($configFile) - fill in the values"
   StopProcessing
