@@ -1,0 +1,360 @@
+#!/bin/bash
+# bash strict mode
+# -e - fail on any error
+# -u - fail on undefined variable
+# -o pipefail - fail on any error in pipe
+set -euo pipefail
+
+# set all parameters passed during execution of the script as single parameters
+set -- "$@"
+
+VERSION_MAJOR=1
+VERSION_MINOR=0
+VERSION_PATCH=0
+VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
+
+# Declare_variables
+# Load_functions
+# Functions_definition
+# Process_parameters
+# Recreate_local_backup_dir
+# Check_pgpass_file
+# Check_cron_file
+# Load_config_file
+# Check_DNS_record
+# Production_database_backup
+# Drop_database_on_backup_server
+# Restore_database_on_backup_server
+# Restart_apache_and_zabbix_server
+
+# Declare_variables
+scriptName="zabbix-sync-pgpool"
+scriptConfigVersion="1.0"
+
+# local dir for backup of production zabbix database
+localBackupDir="/root/zabbix-sync/$(date +%H)/"
+
+# password file for postgresql database zabbix
+pgpassFile="$HOME/.pgpass"
+
+scriptDir="/usr/local/bash-scripts"
+
+verbose=0
+# Declare_variables
+
+# Load_functions
+# load definition of functions LogInfo, LogWarning, LogError,
+. $scriptDir/funkce
+# Load_functions
+
+# Functions_definition
+# Function shows usage of the script
+Usage() {
+  echo "Script is used for synchronization of Zabbix database from production to backup server"
+  echo "Script is using pg_dump and pg_restore for backup and restore of database"
+  echo "It dumps only public schema and other schemas are created empty,"
+  echo "so there is no history or trends data from production, but only structure"
+  echo "Script is using pgpass file for passwords and configuration file for settings"
+  echo "Only schema public is restored, other schemas are created empty - no trends or history data"
+  echo "There are checks of DNS record to prevent overwriting currently production database"
+  echo "Script is using flock to prevent multiple instances of the script running at the same time"
+  echo "Backup is created every hour in a different directory, so it is possible to restore from older backup"
+  echo ""
+  echo "Usage: $scriptName [OPTION]"
+  echo "  -h, --help     Display this help and exit"
+  echo "  -V, --version  Display version information and exit"
+  echo "  -d             Enable debug output of log messages"
+  echo "  -v             Enable verbose output of log messages"
+  echo "  -x             Enable bash debug output of the script"
+}
+
+# Function writes the pgpass file with default values
+write_pgpassFile() {
+  {
+    echo "# hostname:port:database:username:password"
+    echo "localhost:5432:zabbix:zabbix:ZABBIX_BACKUP_PASSWORD"
+    echo "localhost:5432:zabbix:zabbix_test:ZABBIX_BACKUP_PASSWORD"
+    echo "10.91.0.72:9999:zabbix:zabbix:ZABBIX_PRODUCTION_PASSWORD"
+  } >>"$pgpassFile"
+  chmod 600 "$pgpassFile"
+}
+
+# Function writes the configuration file with default values and also handles updates of the config file
+write_config() {
+
+  # default values for variables - updated in case of existing file
+  configVersion="${scriptConfigVersion}"
+  enabled="false"
+  zabbixIP="91.224.91.96"
+  zabbixDnsName="zabbix6.tlapnet.cz"
+  remoteDbIP="10.91.0.72"
+  remoteDbName="zabbix"
+  remoteDbUser="zabbix"
+  remoteDbPort="9999"
+  localDbName="zabbix_test"
+  localDbUser="zabbix"
+  procNum="4"
+
+  # if config file exists, create backup and source it to preserve values
+  if [ -f "${configFile}" ]; then
+    cp "${configFile}" "${configFile}.back"
+    RvLog "Created backup of old config file (${configFile}.back)"
+    source "${configFile}.back"
+
+    # replace config version with script version to update config file
+    configVersion="${scriptConfigVersion}"
+  fi
+
+  {
+    echo "# config version - checked by the script - for automatic config update"
+    echo "configVersion=\"${configVersion}\""
+    echo ""
+    echo "# enable (true) / disable (false) execution of the script"
+    echo "enabled=\"${enabled}\""
+    echo ""
+    echo "# IP address of the production Zabbix server - anycast record"
+    echo "zabbixIP=\"${zabbixIP}\""
+    echo ""
+    echo "# DNS record, which is used to fail over the production Zabbix server"
+    echo "zabbixDnsName=\"${zabbixDnsName}\""
+    echo ""
+    echo "# Virtual IP address of pgpool2 for Zabbix database"
+    echo "remoteDbIP=\"${remoteDbIP}\""
+    echo ""
+    echo "# name of the database on the production server, which will be backed up - ideally zabbix"
+    echo "# access must be defined in ~/.pgpass on backup server"
+    echo "remoteDbName=zabbix"
+    echo ""
+    echo "# user for access to the database - ideally zabbix"
+    echo "# access must be defined in ~/.pgpass on backup server"
+    echo "remoteDbUser=\"${remoteDbUser}\""
+    echo ""
+    echo "# port, which is used to connect to the database on the production server"
+    echo "# because we are using pgpool, we connect to port 9999 - default postgresql is 5432"
+    echo "remoteDbPort=${remoteDbPort}"
+    echo ""
+    echo "# name of the database on the backup server, where the backup from production will be restored "
+    echo "# ideally zabbix | zabbix_test - for testing, it is possible to send to the test database"
+    echo "# access must be defined in ~/.pgpass on backup server"
+    echo "localDbName=\"${localDbName}\""
+    echo ""
+    echo "# user for access to the database on the backup server - ideally zabbix"
+    echo "# access must be defined in ~/.pgpass on backup server"
+    echo "localDbUser=\"${localDbUser}\""
+    echo ""
+    echo "# number of parallel processes for backup and restore of the database"
+    echo "# for each process, it means one pg_dump and one postgresql worker, so be careful"
+    echo "procNum=4"
+  } >"$configFile"
+  LogError "Created configuration file for the script ($configFile)"
+}
+# Functions_definition
+
+# Process_parameters
+while [ "$#" -gt 0 ]; do
+  # PARAMETERS
+  # print version and exit
+  if [ "$1" = "-V" ] || [ "$1" = "--version" ]; then
+    echo "${VERSION}"
+    exit 0
+    # print help and exit
+  elif [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    Usage
+    exit 0
+  # OPTIONS
+  elif [ "$1" = "-x" ]; then
+    echo "Detected parameter $1 for bash debug output of the script"
+    set -x
+  elif [ "$1" = "-d" ]; then
+    LogWarning "Detected parameter $1 for debug output of log messages"
+    DEBUG_OUTPUT="true"
+  elif [ "$1" = "-v" ]; then
+    LogWarning "Detected parameter $1 for verbose output of log messages"
+    verbose=1
+  else
+    LogError "Unknown parameter detected: $1"
+    Usage
+    exit 1
+  fi
+
+  shift
+done
+# Process_parameters
+
+LogInfo "script ($scriptName) - zacatek"
+echo "$$" >"$startFile"
+LogInfo "($startFile) set to ($$)"
+
+# Recreate_local_backup_dir
+if ! rm -rf "$localBackupDir" 2>/dev/null
+then
+  LogError "Problem deleting $localBackupDir"
+  StopProcessing
+  exit 1
+fi
+
+if ! mkdir -p "$localBackupDir"
+then
+  LogError "Problem creating $localBackupDir"
+  StopProcessing
+  exit 1
+fi
+# Recreate_local_backup_dir
+
+# Check_pgpass_file
+# check if pgpassFile exists, if not, create it from the default config
+if [ ! -f "$pgpassFile" ]; then
+  write_pgpassFile
+  LogError "Created new file for pgpass ($pgpassFile) - fill in the passwords for zabbix user"
+  StopProcessing
+  exit 1
+fi
+
+if [ "$(grep -c "ZABBIX_BACKUP_PASSWORD" "$pgpassFile")" -ne 0 ]; then
+  LogError "WARNING, password for zabbix user on backup server is not set in [$pgpassFile]"
+  StopProcessing
+  exit 1
+fi
+
+if [ "$(grep -c "ZABBIX_PRODUCTION_PASSWORD" "$pgpassFile")" -ne 0 ]; then
+  LogError "WARNING, password for zabbix user on production server is not set in [$pgpassFile]"
+  StopProcessing
+  exit 1
+fi
+# Check_pgpass_file
+
+# Check_cron_file
+#pokud neni zaznam pro postgresql-backup
+if [ ! -e "$cronFile" ]; then
+  # create cron entry for the script
+  {
+    echo "*/30 * * * * root flock -n $pidDir/zabbix-sync.lock $sbinDir/zabbix-sync > $outputFile"
+  } >"$cronFile"
+  RvLog "Created cron entry for zabbix-sync script in $cronFile"
+fi
+# Check_cron_file
+
+# Load_config_file
+# Load configuration file or create it with default values
+if [ -f "$configFile" ]; then
+  . "$configFile"
+  LogInfo "Loaded configuration file ($configFile)"
+else
+  write
+  . "$configFile"
+  LogError "Created configuration file ($configFile) - fill in the values"
+  StopProcessing
+  exit 1
+fi
+
+# check config - stop on disabled execution
+if [ "${enabled}" = "false" ]; then
+  LogInfo "Script (${scriptName}) is disabled in config file (${configFile})"
+  StopProcessing
+  exit 1
+fi
+# Load_config_file
+
+# Check_DNS_record
+LogInfo "Checking DNS record for Zabbix server"
+
+if [ "$(ping -c1 "$zabbixDnsName" | grep -c "$zabbixIP")" -eq 0 ]; then
+  LogError "Problem with DNS record verification [$zabbixDnsName] does not point to required IP [$zabbixIP]"
+  LogError "Script will not continue to prevent overwriting production database"
+  StopProcessing
+  exit 1
+else
+  if ! systemctl stop apache2 zabbix-server; then
+    LogError "Problem stopping apache or zabbix-server before database transfer"
+    exit 2
+  else
+    LogInfo "Successfully stopped apache or zabbix-server before database transfer"
+  fi
+fi
+# Check_DNS_record
+
+LogInfo "Start of database backup from production server"
+
+# Production_database_backup
+if ! pg_dump -U"$remoteDbUser" -p"$remoteDbPort" -h"$remoteDbIP" -w --dbname="$remoteDbName" \
+     --create --clean --format=directory --file="$localBackupDir" --jobs=$procNum --schema=public
+EOF
+  if ! systemctl restart apache2 zabbix-server; then
+    LogError "Problem starting apache or zabbix-server after failed database transfer"
+    StopProcessing
+    exit 3
+  else
+    LogInfo "Successfully started apache or zabbix-server after failed database transfer"
+  fi
+
+  LogError "Problem with database backup from production server"
+  StopProcessing
+  exit 3
+else
+  LogInfo "Successfully created backup of production database"
+fi
+# Production_database_backup
+
+# Drop_database_on_backup_server
+LogInfo "Drop database on backup server"
+if ! psql -Upostgres -v ON_ERROR_STOP=1 >/dev/null <<EOF; then
+DROP DATABASE IF EXISTS "$localDbName";
+CREATE DATABASE "$localDbName" OWNER "$localDbUser";
+\c "$localDbName"
+ALTER SCHEMA public OWNER TO "$localDbUser";
+CREATE SCHEMA IF NOT EXISTS trends AUTHORIZATION "$localDbUser";
+CREATE SCHEMA IF NOT EXISTS trends_uint AUTHORIZATION "$localDbUser";
+CREATE SCHEMA IF NOT EXISTS history AUTHORIZATION "$localDbUser";
+CREATE SCHEMA IF NOT EXISTS history_uint AUTHORIZATION "$localDbUser";
+CREATE SCHEMA IF NOT EXISTS history_text AUTHORIZATION "$localDbUser";
+EOF
+  if ! systemctl restart apache2 zabbix-server
+  then
+    LogError "Problem starting apache or zabbix-server after failed backup database recreation"
+    StopProcessing
+    exit 5
+  else
+    LogInfo "Successfully started apache or zabbix-server after failed backup database recreation"
+  fi
+
+  LogError "Problem with drop and recreate of backup database $localDbName"
+  StopProcessing
+  exit 5
+else
+  LogInfo "Successfully dropped and recreated database $localDbName"
+fi
+# Drop_database_on_backup_server
+
+# Restore_database_on_backup_server
+LogInfo "Restore backup on backup server"
+if ! pg_restore -U "$localDbUser" -w --dbname="$localDbName" \
+     --if-exists --clean --schema=public --no-acl --jobs="$procNum" "$localBackupDir"
+then
+  if ! systemctl restart apache2 zabbix-server; then
+    LogError "Problem starting apache or zabbix-server after failed database restore"
+    StopProcessing
+    exit 6
+  else
+    LogInfo "Successfully started apache or zabbix-server after failed database restore"
+  fi
+
+  LogError "Problem with database restore on backup server"
+  StopProcessing
+  exit 6
+else
+  LogInfo "Successfully restored database on backup server"
+fi
+# Restore_database_on_backup_server
+
+# Restart_apache_and_zabbix_server
+if ! systemctl restart apache2 zabbix-server; then
+  LogError "Problem starting apache or zabbix-server after database transfer"
+  StopProcessing
+  exit 8
+else
+  LogInfo "Successfully started apache or zabbix-server after database transfer"
+fi
+# Restart_apache_and_zabbix_server
+
+StopProcessing
+exit 0
