@@ -123,7 +123,7 @@ write_config() {
     echo ""
     echo "# name of the database on the production server, which will be backed up - ideally zabbix"
     echo "# access must be defined in ~/.pgpass on backup server"
-    echo "remoteDbName=zabbix"
+    echo "remoteDbName=\"${remoteDbName}\""
     echo ""
     echo "# user for access to the database - ideally zabbix"
     echo "# access must be defined in ~/.pgpass on backup server"
