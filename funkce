@@ -64,7 +64,7 @@ LogDebug() {
     echo "$(date '+%b %d %T') $HOSTNAME $scriptName:(Debug)[$$]: $1" >>"$logFile"
 
     if [ "$verbose" -eq 1 ]; then
-      echo -e "\e[1;90m $(date '+%b %d %T') $SCRIPT_NAME (Debug): $1 \e[0m"
+      echo -e "\e[1;90m $(date '+%b %d %T') $scriptName (Debug): $1 \e[0m"
     fi
   fi
 }
@@ -76,7 +76,7 @@ LogInfo() {
   echo "$(date '+%b %d %T') $HOSTNAME $scriptName:(Info)[$$]: $1" >>"$logFile"
 
   if [ "$verbose" -eq 1 ]; then
-    echo -e "\e[1;92m $(date '+%b %d %T') $SCRIPT_NAME (Info): $1 \e[0m"
+    echo -e "\e[1;92m $(date '+%b %d %T') $scriptName (Info): $1 \e[0m"
   fi
 }
 
@@ -85,7 +85,7 @@ LogInfo() {
 # yellow warning log output
 LogWarning() {
   echo "$(date '+%b %d %T') $HOSTNAME $scriptName:(Warning)[$$]: $1" >>"$logFile"
-  echo -e "\e[1;33m $(date '+%b %d %T') $SCRIPT_NAME (Warning): $1 \e[0m"
+  echo -e "\e[1;33m $(date '+%b %d %T') $scriptName (Warning): $1 \e[0m"
 }
 
 # _LogError
@@ -93,7 +93,7 @@ LogWarning() {
 # red error log output
 LogError() {
   echo "$(date '+%b %d %T') $HOSTNAME $scriptName:(Error)[$$]: $1" >>"$logFile"
-  echo -e "\e[1;91m $(date '+%b %d %T') $SCRIPT_NAME (Error): $1 \e[0m"
+  echo -e "\e[1;91m $(date '+%b %d %T') $scriptName (Error): $1 \e[0m"
   touch "$errorFile"
 }
 
