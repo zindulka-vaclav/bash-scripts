@@ -185,7 +185,8 @@ RecreateDir() {
 #pokud neexistuje, tak ho vytvori
 TestRunFile() {
   #kontrola, zda script nebezi od minule
-  if [ -f "$runFile" ]; then
+  if [ -f "$runFile" ] && [ -f "$startFile" ]
+  then
     scriptPid=$(cat "$startFile")
 
     #zkontroluje pid puvodniho procesu
