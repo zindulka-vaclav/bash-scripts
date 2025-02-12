@@ -117,7 +117,7 @@ StopProcessing() {
   #odstranuje vzdy, krome pripadu,  kdy je predan parametr keep
   #ten se predava pouze pri kontrole pomoci funkce TestRunFile()
   #je to ochrana pred pripadnym smazanim runFile u stale beziciho scriptu
-  if [ "$1" != "keep" ]; then
+  if [ "${1:-UNDEFINED}" != "keep" ]; then
 
     #odstrani runFile, pri volani StopProcessing, jelikoz po nem vzdy nasleduje exit
     #s vyjimkou parametru keep
@@ -214,7 +214,7 @@ TestRunFile() {
   fi
 }
 
-if [ "$1" != "-V" ] && [ "$1" != "--version" ]; then
+if [ "${1:-UNDEFINED}" != "-V" ] && [ "${1:-UNDEFINED}" != "--version" ]; then
   #pokud od minule zustal soubor $errorFile, tak ho odstrani
   if [ -e "$errorFile" ]; then
     rm "$errorFile"
