@@ -96,7 +96,8 @@ write_config() {
   procNum="4"
 
   # if config file exists, create backup and source it to preserve values
-  if [ -f "${configFile}" ]; then
+  if [ -f "${configFile}" ]
+  then
     cp "${configFile}" "${configFile}.back"
     RvLog "Created backup of old config file (${configFile}.back)"
     source "${configFile}.back"
@@ -154,21 +155,26 @@ write_config() {
 while [ "$#" -gt 0 ]; do
   # PARAMETERS
   # print version and exit
-  if [ "$1" = "-V" ] || [ "$1" = "--version" ]; then
+  if [ "$1" = "-V" ] || [ "$1" = "--version" ]
+  then
     echo "${VERSION}"
     exit 0
     # print help and exit
-  elif [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+  elif [ "$1" = "-h" ] || [ "$1" = "--help" ]
+  then
     Usage
     exit 0
   # OPTIONS
-  elif [ "$1" = "-x" ]; then
+  elif [ "$1" = "-x" ]
+  then
     echo "Detected parameter $1 for bash debug output of the script"
     set -x
-  elif [ "$1" = "-d" ]; then
+  elif [ "$1" = "-d" ]
+  then
     LogWarning "Detected parameter $1 for debug output of log messages"
     DEBUG_OUTPUT="true"
-  elif [ "$1" = "-v" ]; then
+  elif [ "$1" = "-v" ]
+  then
     LogWarning "Detected parameter $1 for verbose output of log messages"
     verbose=1
   else
@@ -203,20 +209,23 @@ fi
 
 # Check_pgpass_file
 # check if pgpassFile exists, if not, create it from the default config
-if [ ! -f "$pgpassFile" ]; then
+if [ ! -f "$pgpassFile" ]
+then
   write_pgpassFile
   LogError "Created new file for pgpass ($pgpassFile) - fill in the passwords for zabbix user"
   StopProcessing
   exit 1
 fi
 
-if [ "$(grep -c "ZABBIX_BACKUP_PASSWORD" "$pgpassFile")" -ne 0 ]; then
+if [ "$(grep -c "ZABBIX_BACKUP_PASSWORD" "$pgpassFile")" -ne 0 ]
+then
   LogError "WARNING, password for zabbix user on backup server is not set in [$pgpassFile]"
   StopProcessing
   exit 1
 fi
 
-if [ "$(grep -c "ZABBIX_PRODUCTION_PASSWORD" "$pgpassFile")" -ne 0 ]; then
+if [ "$(grep -c "ZABBIX_PRODUCTION_PASSWORD" "$pgpassFile")" -ne 0 ]
+then
   LogError "WARNING, password for zabbix user on production server is not set in [$pgpassFile]"
   StopProcessing
   exit 1
@@ -225,7 +234,8 @@ fi
 
 # Check_cron_file
 #pokud neni zaznam pro postgresql-backup
-if [ ! -e "$cronFile" ]; then
+if [ ! -e "$cronFile" ]
+then
   # create cron entry for the script
   {
     echo "*/30 * * * * root flock -n $pidDir/zabbix-sync.lock $sbinDir/zabbix-sync > $outputFile"
@@ -236,7 +246,8 @@ fi
 
 # Load_config_file
 # Load configuration file or create it with default values
-if [ -f "$configFile" ]; then
+if [ -f "$configFile" ]
+then
   . "$configFile"
   LogInfo "Loaded configuration file ($configFile)"
 else
@@ -248,7 +259,8 @@ else
 fi
 
 # check config - stop on disabled execution
-if [ "${enabled}" = "false" ]; then
+if [ "${enabled}" = "false" ]
+then
   LogInfo "Script (${scriptName}) is disabled in config file (${configFile})"
   StopProcessing
   exit 1
@@ -258,13 +270,15 @@ fi
 # Check_DNS_record
 LogInfo "Checking DNS record for Zabbix server"
 
-if [ "$(ping -c1 "$zabbixDnsName" | grep -c "$zabbixIP")" -eq 0 ]; then
+if [ "$(ping -c1 "$zabbixDnsName" | grep -c "$zabbixIP")" -eq 0 ]
+then
   LogError "Problem with DNS record verification [$zabbixDnsName] does not point to required IP [$zabbixIP]"
   LogError "Script will not continue to prevent overwriting production database"
   StopProcessing
   exit 1
 else
-  if ! systemctl stop apache2 zabbix-server; then
+  if ! systemctl stop apache2 zabbix-server
+  then
     LogError "Problem stopping apache or zabbix-server before database transfer"
     exit 2
   else
@@ -278,8 +292,9 @@ LogInfo "Start of database backup from production server"
 # Production_database_backup
 if ! pg_dump -U"$remoteDbUser" -p"$remoteDbPort" -h"$remoteDbIP" -w --dbname="$remoteDbName" \
      --create --clean --format=directory --file="$localBackupDir" --jobs=$procNum --schema=public
-EOF
-  if ! systemctl restart apache2 zabbix-server; then
+then
+  if ! systemctl restart apache2 zabbix-server
+  then
     LogError "Problem starting apache or zabbix-server after failed database transfer"
     StopProcessing
     exit 3
@@ -330,7 +345,8 @@ LogInfo "Restore backup on backup server"
 if ! pg_restore -U "$localDbUser" -w --dbname="$localDbName" \
      --if-exists --clean --schema=public --no-acl --jobs="$procNum" "$localBackupDir"
 then
-  if ! systemctl restart apache2 zabbix-server; then
+  if ! systemctl restart apache2 zabbix-server
+  then
     LogError "Problem starting apache or zabbix-server after failed database restore"
     StopProcessing
     exit 6
@@ -347,7 +363,8 @@ fi
 # Restore_database_on_backup_server
 
 # Restart_apache_and_zabbix_server
-if ! systemctl restart apache2 zabbix-server; then
+if ! systemctl restart apache2 zabbix-server
+then
   LogError "Problem starting apache or zabbix-server after database transfer"
   StopProcessing
   exit 8
