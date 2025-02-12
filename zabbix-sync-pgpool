@@ -291,7 +291,8 @@ LogInfo "Start of database backup from production server"
 
 # Production_database_backup
 if ! pg_dump -U"$remoteDbUser" -p"$remoteDbPort" -h"$remoteDbIP" -w --dbname="$remoteDbName" \
-     --create --clean --format=directory --file="$localBackupDir" --jobs=$procNum --schema=public
+     --create --clean --no-owner --no-acl --format=directory --file="$localBackupDir" \
+     --jobs=$procNum --schema=public
 then
   if ! systemctl restart apache2 zabbix-server
   then
@@ -343,7 +344,7 @@ fi
 # Restore_database_on_backup_server
 LogInfo "Restore backup on backup server"
 if ! pg_restore -U "$localDbUser" -w --dbname="$localDbName" \
-     --if-exists --clean --schema=public --no-acl --jobs="$procNum" "$localBackupDir"
+     --if-exists --clean --schema=public --no-owner --no-acl --jobs="$procNum" "$localBackupDir"
 then
   if ! systemctl restart apache2 zabbix-server
   then
