@@ -24,8 +24,8 @@ set -eo pipefail
 # _restart_apache_a_zabbix_serveru
 
 VERSION_MAJOR=1
-VERSION_MINOR=1
-VERSION_PATCH=9
+VERSION_MINOR=2
+VERSION_PATCH=0
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 #_PROMENNE
@@ -144,7 +144,7 @@ if [ ! -e "$cronFile" ]; then
   #vytvori zaznam, ktery pravidelne spousti dany script v nastaveny cas a kompletni vystup se uklada do /var/log
   {
     echo "#denni spousteni zabbix-sync"
-    echo "0 2 * * * root flock -n $pidDir/zabbix-sync.lock $sbinDir/zabbix-sync > $outputFile"
+    echo "0 2 * * * root flock -n $pidDir/zabbix-sync-postgresql.lock $sbinDir/zabbix-sync > $outputFile"
   } >"$cronFile"
   RvLog "zapsano spousteni zabbix-sync scriptu do cronu $cronFile"
 else
