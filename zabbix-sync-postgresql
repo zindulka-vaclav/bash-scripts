@@ -25,18 +25,18 @@ set -eo pipefail
 
 VERSION_MAJOR=1
 VERSION_MINOR=2
-VERSION_PATCH=0
+VERSION_PATCH=1
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 #_PROMENNE
-scriptName="zabbix-sync"
+scriptName="zabbix-sync-postgresql"
 
 # uzivatel pro provadeni a stahovani zalohy z ostreho serveru - musi mit definovat pristup do databaze v
 # ~/.pgpass
-remoteUser="zabbix-sync"
+remoteUser="zabbix-sync-postgresql"
 
 # slozka, kam se na ostrem serveru provede zaloha
-remoteBackupDir="zabbix-sync"
+remoteBackupDir="zabbix-sync-postgresql"
 
 # slozka, kam se na lokalnim serveru stahne remote zaloha - aby bylo kam sahnout, uklada se kazdou hodinu
 # do jine slozky
@@ -143,10 +143,10 @@ fi
 if [ ! -e "$cronFile" ]; then
   #vytvori zaznam, ktery pravidelne spousti dany script v nastaveny cas a kompletni vystup se uklada do /var/log
   {
-    echo "#denni spousteni zabbix-sync"
-    echo "0 2 * * * root flock -n $pidDir/zabbix-sync-postgresql.lock $sbinDir/zabbix-sync > $outputFile"
+    echo "#denni spousteni zabbix-sync-postgresql"
+    echo "0 2 * * * root flock -n $pidDir/zabbix-sync-postgresql.lock $sbinDir/zabbix-sync-postgresql > $outputFile"
   } >"$cronFile"
-  RvLog "zapsano spousteni zabbix-sync scriptu do cronu $cronFile"
+  RvLog "zapsano spousteni zabbix-sync-postgresql scriptu do cronu $cronFile"
 else
   sed -i -e 's/\&>/> /g' "$cronFile"
 fi
@@ -172,7 +172,7 @@ fi
 
 #kontrola, zda mysqlPassword neobsahuje EMPTY
 if [ "$(grep -c "ZABBIX_PASSWORD" "$pgpassFile")" -ne 0 ]; then
-  LogError "POZOR, neni nastaveno heslo pro zabbix-sync v [$pgpassFile]"
+  LogError "POZOR, neni nastaveno heslo pro zabbix-sync-postgresql v [$pgpassFile]"
   StopProcessing
   exit 1
 fi

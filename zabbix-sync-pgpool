@@ -10,7 +10,7 @@ set -- "$@"
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=1
+VERSION_PATCH=2
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # Declare_variables
@@ -238,9 +238,9 @@ if [ ! -e "$cronFile" ]
 then
   # create cron entry for the script
   {
-    echo "*/30 * * * * root flock -n $pidDir/zabbix-sync-pgpool.lock $sbinDir/zabbix-sync > $outputFile"
+    echo "*/30 * * * * root flock -n $pidDir/zabbix-sync-pgpool.lock $sbinDir/zabbix-sync-pgpool > $outputFile"
   } >"$cronFile"
-  RvLog "Created cron entry for zabbix-sync script in $cronFile"
+  RvLog "Created cron entry for zabbix-sync-pgpool script in $cronFile"
 fi
 # Check_cron_file
 
