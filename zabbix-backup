@@ -15,8 +15,8 @@ set -eo pipefail
 #_ZALOHA
 
 VERSION_MAJOR=1
-VERSION_MINOR=0
-VERSION_PATCH=9
+VERSION_MINOR=1
+VERSION_PATCH=0
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # pri predani parametru -x provede zapnuti debug logu
@@ -143,7 +143,7 @@ CheckDir "$backupDir/$backupDate/"
 backupName="$backupDir/$backupDate/$backupTime"
 
 #vytvoreni zalohy
-pg_dump -Uzabbix -w --dbname=zabbix --create --clean --format=directory --file="$backupName" --jobs="$procNum"
+pg_dump -Uzabbix -w --dbname=zabbix --create --clean --format=directory --file="$backupName" --compress=1 --jobs="$procNum"
 RvLog "Vytvoren pg_dump databaze s nazvem ($backupName)"
 
 #kontrola navratove hodnoty cd
