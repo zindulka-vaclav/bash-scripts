@@ -242,7 +242,7 @@ then
     LogError "SMB mount options contain default password - please update the config file"
     StopProcessing
     exit 4
-  elif [[ "${smbOMountParams}" =~ ^-o\  ]]
+  elif [[ "${smbOMountParams}" =~ "^-o " ]]
   then
     LogError "SMB mount options must start with -o followed by space"
     StopProcessing
