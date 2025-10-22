@@ -255,7 +255,7 @@ then
     StopProcessing
     exit 4
   else
-    LogInfo "Synchronization will use SMB protocol and mount to ${localMountPoint} with options ${smbOMountParams}"
+    LogInfo "Synchronization will use SMB protocol and mount to ${localMountPoint}"
   fi
 else
   LogError "Mount protocol (${mountProtocol}) is not supported - only nfs and smb are allowed"
@@ -291,7 +291,7 @@ then
   fi
 elif [ "${mountProtocol}" == "smb" ]
 then
-  LogInfo "Mounting SMB share to ($localMountPoint) with options (${smbOMountParams})"
+  LogInfo "Mounting SMB share to ($localMountPoint) with options"
   mount -t cifs "${smbTargetShare}" "$localMountPoint" ${smbOMountParams}
   RvLog "Mounted SMB share to ($localMountPoint)"
 
