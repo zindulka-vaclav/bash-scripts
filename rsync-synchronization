@@ -66,7 +66,7 @@ write_config() {
   mountProtocol="nfs"
   nfsMountShare=""
   smbOMountParams="-o username=USERNAME,password=PASSWORD,rw,iocharset=utf8,mapchars,file_mode=0775,dir_mode=0775"
-  smbTargetShare=""
+  smbTargetShare="//192.168.1.100/share/server-name"
 
   if [ -f "$configFile" ]
   then
