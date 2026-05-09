@@ -9,7 +9,7 @@ set -- "$@"
 
 VERSION_MAJOR=1
 VERSION_MINOR=0
-VERSION_PATCH=8
+VERSION_PATCH=9
 VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 
 # Declare_variables
@@ -320,20 +320,16 @@ for syncFolder in "${listOfFolders[@]}"; do
   LogInfo "rsync - starting backup ($syncFolder) to ($targetSyncFolder)"
   if [ "$verbose" -eq 1 ]
   then
-    rsync -e "ssh -o StrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null" "$rsyncOptions" \
+    if ! rsync -e "ssh -o StrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null" "$rsyncOptions" \
       --delete --bwlimit=32000 "$syncFolder" "$targetSyncFolder"
-
-    if [ "$?" -ne 0 ]
     then
       LogError "rsync - ($syncFolder) to ($targetSyncFolder) ended with error"
     else
       LogInfo "rsync - ($syncFolder) to ($targetSyncFolder) completed"
     fi
   else
-    rsync -e "ssh -o StrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null" "$rsyncOptions" \
+    if ! rsync -e "ssh -o StrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null" "$rsyncOptions" \
       --delete --bwlimit=32000 "$syncFolder" "$targetSyncFolder" >/dev/null
-
-    if [ "$?" -ne 0 ]
     then
       LogError "rsync - ($syncFolder) to ($targetSyncFolder) ended with error"
     else
