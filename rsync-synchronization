@@ -219,7 +219,7 @@ elif [ "${mountProtocol}" == "smb" ]
 then
   # --delete, --backup-dir can't be set this way and must be on the command line
   # without symlinks, which are not supported by SMB
-  rsyncOptions="-rtv"
+  rsyncOptions="-rLtv"
 
   if [ -z "${localMountPoint}" ]
   then
