@@ -22,9 +22,6 @@ VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 # declare_variables
 scriptName="rsync-synchronization"
 
-# --delete, --backup-dir can't be set this way and must be on the command line
-rsyncOptions="-rltDv"
-
 scriptDir="/usr/local/bash-scripts"
 
 scriptConfigVersion="1.2"
@@ -202,6 +199,9 @@ fi
 
 if [ "${mountProtocol}" == "nfs" ]
 then
+  # --delete, --backup-dir can't be set this way and must be on the command line
+  rsyncOptions="-rltDv"
+
   if [ -z "${localMountPoint}" ]
   then
     LogError "Local mount point is not set"
@@ -217,6 +217,10 @@ then
   fi
 elif [ "${mountProtocol}" == "smb" ]
 then
+  # --delete, --backup-dir can't be set this way and must be on the command line
+  # without symlinks, which are not supported by SMB
+  rsyncOptions="-rtv"
+
   if [ -z "${localMountPoint}" ]
   then
     LogError "Local mount point is not set for smb protocol"
